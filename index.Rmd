@@ -1,6 +1,6 @@
 ---
-title: "Demo Portfolio for Computational Musicology 2025"
-author: "John Ashley Burgoyne"
+title: "My Portfolio for Computational Musicology 2025"
+author: "Nora Kahleogullari"
 date: "Block 4"
 output: 
   flexdashboard::flex_dashboard:
@@ -11,65 +11,28 @@ output:
 library(tidyverse)
 library(flexdashboard)
 library(plotly)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Welcome to Computational Musicology 2024!
+## Welcome to Computational Musicology 2024!
 
 Welcome to Computational Musicology 2024! This storyboard contains further examples from each week to inspire you.
 
 You can access the lecture notes at the following links.
 
-- [Week 7 · Computational Musicology and (Audio) Visualisation](./notes/compmus2025-w07.html)
-
 ### Visualising the AI Song Contest
 
 ```{r}
-aisc2024 <- read_csv("notes/aisc2024.csv")
-aisc2024 |>                   # Start with the data
-  ggplot(                     # Set up the plot.
-    aes(
-      x = tempo,
-      y = arousal,
-      size = instrumentalness,
-      colour = danceability
-    )
-  ) +
-  geom_point() +              # Scatter plot.
-  geom_rug(linewidth = 0.1) + # Add 'fringes' to show data distribution.
-  geom_text(                  # Add text labels from above.
-    x = 121,
-    y = 4.91,
-    label = "Onda Corta - Sud America",
-    size = 3,                 # Override size (not loudness here).
-    hjust = "left",           # Align left side of label with the point.
-    vjust = "center",         # Align vertical centre of label with the point.
-    angle = 30                # Rotate the text label
-  ) +
-  scale_x_continuous(         # Fine-tune the x axis.
-    limits = c(50, 200),
-    breaks = c(50, 100, 150, 200), # Specify grid lines
-    minor_breaks = NULL       # Remove 'minor' grid lines.
-  ) +
-  scale_y_continuous(         # Fine-tune the y axis in the same way.
-    limits = c(1, 9),
-    breaks = c(1, 5, 9),
-    minor_breaks = NULL
-  ) +
-  scale_colour_viridis_c() +  # Use the popular viridis colour palette.
-  scale_size_continuous(      # Fine-tune the sizes of each point.
-    trans = "exp",            # Use an exp transformation to emphasise loud..
-    guide = "none"            # Remove the legend for size.
-  ) +
-  theme_light() +             # Use a simpler theme.
-  labs(                       # Make the titles nice.
-    x = "Tempo",
-    y = "Arousal",
-    colour = "Danceability"
-  )
-ggplotly()
 ```
 
 
-***
+### Including Plots -----------------------------------------------------------------------------------------
 
-This is the bad visualisation of the AI Song Contest we used in our first lab session, this time in a dashboard.
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
