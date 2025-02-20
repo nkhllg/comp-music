@@ -14,27 +14,135 @@ library(plotly)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Welcome to Computational Musicology 2024!
+## Welcome to my dashboard!
 
-Welcome to Computational Musicology 2024! This storyboard contains further examples from each week to inspire you.
+Later we'll dive further into the songs, for now here are 2 descriptions of the songs.
 
-You can access the lecture notes at the following links.
+The first song has a dark, atmospheric 80s-inspired synthwave beat with smooth R&B elements, like The Weeknd , moody, energetic, downtempo, its made with Udio.ai
 
-### Visualising the AI Song Contest
+The second song is dembow, reggaeton, cumbia, afro-latin fusion, rap, latin trap. It's like summer song that will bring you the back to the summer, made with Suno.ai
 
-```{r}
-```
+### Introduction
 
+Hello, the introduction will come when we have the class corpus, so that's soon. For now, go to the discovery page.
 
 ### Discovery
+First we have a few plots, so a better insight into the data can be created
 
-You can also embed plots, for example:
+#### chart 1
+```{r echo=FALSE}
+aisc2024 <- read_csv('aisc2024.csv')
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+# Histogram of Danceability
+ggplot(aisc2024, aes(x = danceability)) +
+  geom_histogram(binwidth = 0.05, fill = "purple", alpha = 0.7, color = "black") +
+  labs(title = "Histogram of Danceability", x = "Danceability", y = "Frequency") +
+  theme_minimal()
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
-### Conclusion
+The histogram of danceability shows that most songs are moderately danceable
 
+```{r echo=FALSE}
+# Scatter Plot of Danceability vs Tempo
+ggplot(aisc2024, aes(x = tempo, y = danceability)) +
+  geom_point(alpha = 0.7, color = "purple") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Danceability vs. Tempo", x = "Tempo (BPM)", y = "Danceability") +
+  theme_minimal()
+
+```
+
+
+The plots show us that a higher tempo does not indicate an higher danceability, more about this on the exclusive insights page. 
+
+#### chart 2
+```{r pressure, echo=FALSE}
+aisc2024 <- read_csv('aisc2024.csv')
+
+ggplot(aisc2024, aes(x=tempo)) +
+  geom_histogram(binwidth=10, fill="steelblue", color="black", alpha=0.7) +
+  theme_minimal() +
+  labs(title="Distribution of Tempo",
+       x="Tempo (BPM)",
+       y="Count") +
+  geom_density(aes(y=..count..*10), color="red", lwd=1.2)
+
+aisc2024$valence <- cut(aisc2024$valence, 
+                          breaks = c(0, 0.33, 0.66, 1), 
+                          labels = c("Low", "Medium", "High"))
+
+# Box plot: Danceability across Valence levels, colored by Instrumentalness
+ggplot(aisc2024, aes(x = valence, y = danceability, fill = valence)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+  geom_jitter(aes(color = instrumentalness), width = 0.2, alpha = 0.6) +  
+  scale_fill_manual(values = c("Low" = "blue", "Medium" = "orange", "High" = "red")) +
+  scale_color_gradient(low = "black", high = "white") +  
+  theme_minimal() +
+  labs(title = "Danceability Across Valence Levels (Instrumentalness in Points)",
+       x = "Valence Category",
+       y = "Danceability",
+       color = "Instrumentalness") +
+  theme(legend.position = "right")
+```
+
+
+The BPM is or on the lower side or above 110, this is because dance music is 110 BPM or above, while ballads or classical music are on the slower side. 
+
+
+The boxplot shows us that danceability and valence seem to be positively correlated, while the instrumentalness seems independant. It seems that the dataset has a high danceability and valence songs.
+
+#### chart 3 
+```{r echo=FALSE}
+ p <- aisc2024 |>
+   ggplot(
+     aes(
+       x = tempo,
+       y = arousal,
+       size = instrumentalness,
+       colour = danceability
+     )
+   ) +
+   geom_point(alpha = 0.7) +
+   geom_rug(linewidth = 0.2, sides = "b", alpha = 0.5) +  #
+   geom_text(
+     x = 121,
+     y=4.91,
+     label = "Onda Corta - Sud America",
+     size = 4,
+     hjust = "left",
+     vjust = "center",
+     angle = 25,
+     colour = "black"
+   ) +
+   scale_x_continuous(
+     limits = c(50, 200),
+     breaks = seq(50, 200, 50),
+     minor_breaks = NULL
+   ) +
+   scale_y_continuous(
+     limits = c(1, 9),
+     breaks = c(1, 5, 9),
+     minor_breaks = NULL
+   ) +
+   scale_colour_viridis_c(option = "plasma", direction = -1) +
+   scale_size_continuous(trans = "sqrt", guide = "none") +
+ theme_minimal(base_size = 14) +
+   labs(
+     title = "How Tempo and Arousal Relate in the Playlist",
+     subtitle = "Higher tempo generally correlates with higher arousal, with danceability as color",
+     x = "Tempo (BPM)",
+     y = "Arousal (1-9 Scale)",
+   colour = "Danceability"
+   )
+
+ggplotly(p)
+```
+
+This is an interactable chart, so if you hover above it you can see extra information. As can be seen from the chart the arousal is around the 4, this chart is very similar to the boxplot, except for valence we have arousal here. Again the arousal stays the same and you can see that the danceability varies a lot
+
+### Exclusive insights
+
+While it seems shocking, danceability and tempo are not directly correlated, it's among other things dependent on the rhythm, valence, instrumentation and arousal.
+
+If you have a high tempo song, like an EDM song but with a bad rhythm it will not make it danceable, while if you have a slow song you could also slow dance on it and that will make it danceable. It's also important how you define danceable, if its only jumping up and down then the plot would have to change. A song with a high tempo but low energy may not have the same danceable impact as a moderate-tempo track with high energy and rhythm.
