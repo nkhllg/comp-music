@@ -31,7 +31,7 @@ First we have a few plots, so a better insight into the data can be created
 
 #### chart 1
 ```{r echo=FALSE}
-aisc2024 <- read_csv('aisc2024.csv')
+aisc2024 <- read_csv('compmus2025.csv')
 
 # Histogram of Danceability
 ggplot(aisc2024, aes(x = danceability)) +
