@@ -23,12 +23,132 @@ The first song has a dark, atmospheric 80s-inspired synthwave beat with smooth R
 
 The second song is dembow, reggaeton, cumbia, afro-latin fusion, rap, latin trap. It's like summer song that will bring you the back to the summer, made with Suno.ai
 
+
+### Deep dive into the music {.tabset}  
+##### Chroma - Track 1
+
+```{r echo=FALSE}
+"features/nora-k-1.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  ggplot(aes(x = time, y = pc, fill = value)) + 
+  geom_raster() +
+  scale_y_continuous(
+    breaks = 0:11,
+    minor_breaks = NULL,
+    labels = c(
+                "C", "C#|Db", "D", "D#|Eb",
+                "E", "F", "F#|Gb", "G",
+                "G#|Ab", "A", "A#|Bb", "B"
+              )
+  ) +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()                                      # Change the theme? 
+```
+
+The R&B song uses overall only 2 pitchclasses, while in the middle part it almost uses every chord.
+
+#### Chroma - Track 2
+
+```{r echo=FALSE}
+"features/nora-k-2.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  ggplot(aes(x = time, y = pc, fill = value)) + 
+  geom_raster() +
+  scale_y_continuous(
+    breaks = 0:11,
+    minor_breaks = NULL,
+    labels = c(
+                "C", "C#|Db", "D", "D#|Eb",
+                "E", "F", "F#|Gb", "G",
+                "G#|Ab", "A", "A#|Bb", "B"
+              )
+  ) +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()                                      # Change the theme? 
+```
+
+This song shows a sustained activity across all pitch classes. It shows that this song is more intricate and has a complexer harmonic progression
+
+##### self-similarity track 1  {.tabset}
+```{r echo=FALSE}
+"features/nora-k-1.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  compmus_self_similarity(
+    feature = pc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()
+```
+
+It can be seen that the R&B track has a lot more similar parts in the song, as there are a lot of little black squares. This is because the clap and the synths are coming back with a repeated interval.
+
+##### self-similarity track 2 
+```{r echo=FALSE}
+"features/nora-k-2.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  compmus_self_similarity(
+    feature = pc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()
+```
+
+The latin track seems different but also the same, because it seems that the green lines are almost woven, this is because the beat is very similar but it has a sort of distortion above it. 
+
+##### tibre based similarity track 1
+
+```{r echo=FALSE}
+"features/nora-k-1.json" |>                           # Change the track
+  compmus_mfccs(norm = "identity") |>                  # Change the norm
+  compmus_self_similarity(
+    feature = mfcc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()   
+```
+
+The fist part of the song is in terms of similarity 
+super similar untill the chorus, and after its again very similar but there are also a bit more changes.
+
+```{r echo=FALSE}
+"features/nora-k-2.json" |>                           # Change the track
+  compmus_mfccs(norm = "identity") |>                  # Change the norm
+  compmus_self_similarity(
+    feature = mfcc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()   
+```
+
+In the intro of this song it doesnt change much, but it does differ a lot from the rest of the song, the rest of the song has big chunks that are also simila except for the outro and a small part around 110 seconds.
+
+
 ### Introduction
 
 Hello, the introduction will come when we have the class corpus, so that's soon. For now, go to the discovery page.
 
-### Discovery
+### Discovery {.tabset}
 First we have a few plots, so a better insight into the data can be created
+
+
 
 #### chart 1
 ```{r echo=FALSE}
@@ -59,7 +179,6 @@ The plots show us that a higher tempo does not indicate an higher danceability, 
 
 #### chart 2
 ```{r pressure, echo=FALSE}
-aisc2024 <- read_csv('aisc2024.csv')
 
 ggplot(aisc2024, aes(x=tempo)) +
   geom_histogram(binwidth=10, fill="steelblue", color="black", alpha=0.7) +
@@ -95,117 +214,86 @@ The boxplot shows us that danceability and valence seem to be positively correla
 
 #### chart 3 
 ```{r echo=FALSE}
- p <- aisc2024 |>
-   ggplot(
-     aes(
-       x = tempo,
-       y = arousal,
-       size = instrumentalness,
-       colour = danceability
-     )
-   ) +
-   geom_point(alpha = 0.7) +
-   geom_rug(linewidth = 0.2, sides = "b", alpha = 0.5) +  #
-   geom_text(
-     x = 121,
-     y=4.91,
-     label = "Onda Corta - Sud America",
-     size = 4,
-     hjust = "left",
-     vjust = "center",
-     angle = 25,
-     colour = "black"
-   ) +
-   scale_x_continuous(
-     limits = c(50, 200),
-     breaks = seq(50, 200, 50),
-     minor_breaks = NULL
-   ) +
-   scale_y_continuous(
-     limits = c(1, 9),
-     breaks = c(1, 5, 9),
-     minor_breaks = NULL
-   ) +
-   scale_colour_viridis_c(option = "plasma", direction = -1) +
-   scale_size_continuous(trans = "sqrt", guide = "none") +
- theme_minimal(base_size = 14) +
-   labs(
-     title = "How Tempo and Arousal Relate in the Playlist",
-     subtitle = "Higher tempo generally correlates with higher arousal, with danceability as color",
-     x = "Tempo (BPM)",
-     y = "Arousal (1-9 Scale)",
-   colour = "Danceability"
-   )
+library(dplyr)
+library(ggplot2)
+library(plotly)
+
+p <- aisc2024 |>
+  ggplot(
+    aes(
+      x = tempo,
+      y = arousal,
+      size = instrumentalness,
+      colour = danceability
+    )
+  ) +
+  geom_point(alpha = 0.7) +  # Regular points
+  
+  # Highlight Track 1
+  geom_point(
+    data = aisc2024 |> filter(tempo == 111, arousal == 5.0956),  
+    aes(size = 7),  
+    colour = "red",
+    shape = 21,
+    stroke = 1.5
+  ) +
+  
+  # Highlight Track 2
+  geom_point(
+    data = aisc2024 |> filter(tempo == 134, arousal == 5.34),  
+    aes(size = 7),  
+    colour = "blue",
+    shape = 21,
+    stroke = 1.5
+  ) +
+  
+  geom_rug(linewidth = 0.2, sides = "b", alpha = 0.5) +  
+  geom_text(
+    x = 111,
+    y = 5.0956,
+    label = "Track 1",
+    size = 4,
+    hjust = "left",
+    vjust = "center",
+    angle = 25,
+    colour = "black"
+  ) +
+  geom_text(
+    x = 134,
+    y = 5.34,
+    label = "Track 2",
+    size = 4,
+    hjust = "left",
+    vjust = "center",
+    angle = 25,
+    colour = "black"
+  ) +
+  # scale_x_continuous(
+  #   limits = c(50, 200),
+  #   breaks = seq(50, 200, 50),
+  #   minor_breaks = NULL
+  # ) +
+  scale_y_continuous(
+    limits = c(1, 9),
+    breaks = c(1, 5, 9),
+    minor_breaks = NULL
+  ) +
+  scale_colour_viridis_c(option = "plasma", direction = -1) +
+  scale_size_continuous(trans = "sqrt", guide = "none") +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "How Tempo and Arousal Relate in the Playlist",
+    subtitle = "Higher tempo generally correlates with higher arousal, with danceability as color",
+    x = "Tempo (BPM)",
+    y = "Arousal (1-9 Scale)",
+    colour = "Danceability"
+  )
 
 ggplotly(p)
+
 ```
 
 This is an interactable chart, so if you hover above it you can see extra information. As can be seen from the chart the arousal is around the 4, this chart is very similar to the boxplot, except for valence we have arousal here. Again the arousal stays the same and you can see that the danceability varies a lot
-
-```{r echo=FALSE}
-"features/nora-k-1.json" |>                           # Change the track
-  compmus_chroma(norm = "identity") |>                 # Change the norm
-  ggplot(aes(x = time, y = pc, fill = value)) + 
-  geom_raster() +
-  scale_y_continuous(
-    breaks = 0:11,
-    minor_breaks = NULL,
-    labels = c(
-                "C", "C#|Db", "D", "D#|Eb",
-                "E", "F", "F#|Gb", "G",
-                "G#|Ab", "A", "A#|Bb", "B"
-              )
-  ) +
-  scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
-  theme_classic()                                      # Change the theme? 
-```
-```{r echo=FALSE}
-"features/nora-k-2.json" |>                           # Change the track
-  compmus_chroma(norm = "identity") |>                 # Change the norm
-  ggplot(aes(x = time, y = pc, fill = value)) + 
-  geom_raster() +
-  scale_y_continuous(
-    breaks = 0:11,
-    minor_breaks = NULL,
-    labels = c(
-                "C", "C#|Db", "D", "D#|Eb",
-                "E", "F", "F#|Gb", "G",
-                "G#|Ab", "A", "A#|Bb", "B"
-              )
-  ) +
-  scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
-  theme_classic()                                      # Change the theme? 
-```
-
-```{r}
-"features/nora-k-1.json" |>                           # Change the track
-  compmus_chroma(norm = "identity") |>                 # Change the norm
-  compmus_self_similarity(
-    feature = pc,
-    distance = "euclidean"                             # Change the distance
-  ) |>   
-  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
-  theme_classic()
-```
-
-```{r}
-"features/nora-k-2.json" |>                           # Change the track
-  compmus_chroma(norm = "identity") |>                 # Change the norm
-  compmus_self_similarity(
-    feature = pc,
-    distance = "euclidean"                             # Change the distance
-  ) |>   
-  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
-  theme_classic()
-```
 
 
 ### Exclusive insights
@@ -213,3 +301,5 @@ This is an interactable chart, so if you hover above it you can see extra inform
 While it seems shocking, danceability and tempo are not directly correlated, it's among other things dependent on the rhythm, valence, instrumentation and arousal.
 
 If you have a high tempo song, like an EDM song but with a bad rhythm it will not make it danceable, while if you have a slow song you could also slow dance on it and that will make it danceable. It's also important how you define danceable, if its only jumping up and down then the plot would have to change. A song with a high tempo but low energy may not have the same danceable impact as a moderate-tempo track with high energy and rhythm.
+
+Both songs have a very strong structure, this is because it's AI generated and it probabily follows a formula to make a song.
