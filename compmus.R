@@ -291,7 +291,7 @@ compmus_chroma <- function(file, norm = "identity") {
     purrr::map(
       \(v) {
         v |>
-          circshift(1) |>
+          circshift(-8) |>
           matrix(3, 12) |>
           colMeans() |>
           compmus_normalise(method = norm) |>
