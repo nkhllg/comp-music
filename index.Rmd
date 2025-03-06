@@ -26,7 +26,7 @@ The first song has a dark, atmospheric 80s-inspired synthwave beat with smooth R
 The second song is dembow, reggaeton, cumbia, afro-latin fusion, rap, latin trap. It's like summer song that will bring you the back to the summer, made with Suno.ai
 
 
-## Key profile
+### Key profile
 
 ```{r echo=FALSE}
 major_chord <-
