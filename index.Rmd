@@ -11,7 +11,7 @@ output:
 library(tidyverse)
 library(flexdashboard)
 library(plotly)
-# library(tibble)
+library(tibble)
 #library(shiny)
 source("compmus.R")
 knitr::opts_chunk$set(echo = TRUE)
@@ -28,6 +28,7 @@ The second song is dembow, reggaeton, cumbia, afro-latin fusion, rap, latin trap
 
 ### Key profile
 
+##### Song 1
 ```{r echo=FALSE}
 major_chord <-
   c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
@@ -126,8 +127,10 @@ key_templates <-
 
 ```
 
+
 The frequent use of the seventh chord indicates a blues influence, as it's used to add harmonic richness and tension. The repetition of chord sequences indicates the theme that is present in the whole song. 
 
+##### song 2
 ```{r echo=FALSE}
 major_chord <-
   c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
