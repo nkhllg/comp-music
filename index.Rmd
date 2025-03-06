@@ -125,6 +125,7 @@ key_templates <-
   theme_classic()   
 
 ```
+
 The frequent use of the seventh chord indicates a blues influence, as it's used to add harmonic richness and tension. The repetition of chord sequences indicates the theme that is present in the whole song. 
 
 ```{r echo=FALSE}
