@@ -11,6 +11,8 @@ output:
 library(tidyverse)
 library(flexdashboard)
 library(plotly)
+# library(tibble)
+#library(shiny)
 source("compmus.R")
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -24,122 +26,205 @@ The first song has a dark, atmospheric 80s-inspired synthwave beat with smooth R
 The second song is dembow, reggaeton, cumbia, afro-latin fusion, rap, latin trap. It's like summer song that will bring you the back to the summer, made with Suno.ai
 
 
-### Deep dive into the music {.tabset}  
-##### Chroma - Track 1
+## Key profile
 
 ```{r echo=FALSE}
-"features/nora-k-1.json" |>                           # Change the track
-  compmus_chroma(norm = "identity") |>                 # Change the norm
-  ggplot(aes(x = time, y = pc, fill = value)) + 
+major_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
+minor_chord <-
+  c(   1,    0,    0,    1,    0,    0,    0,    1,    0,    0,    0,    0)
+seventh_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    1,    0)
+
+major_key <-
+  c(5.0, 2.0, 3.5, 2.5, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 2.0, 2.5)
+
+minor_key <-
+  c(5.0, 2.5, 3.5, 4.5, 2.0, 3.5, 2.0, 4.0, 3.5, 2.5, 3.0, 2.5)
+
+chord_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:7", circshift(seventh_chord, 6),
+    "Gb:maj", circshift(major_chord, 6),
+    "Bb:min", circshift(minor_chord, 10),
+    "Db:maj", circshift(major_chord, 1),
+    "F:min", circshift(minor_chord, 5),
+    "Ab:7", circshift(seventh_chord, 8),
+    "Ab:maj", circshift(major_chord, 8),
+    "C:min", circshift(minor_chord, 0),
+    "Eb:7", circshift(seventh_chord, 3),
+    "Eb:maj", circshift(major_chord, 3),
+    "G:min", circshift(minor_chord, 7),
+    "Bb:7", circshift(seventh_chord, 10),
+    "Bb:maj", circshift(major_chord, 10),
+    "D:min", circshift(minor_chord, 2),
+    "F:7", circshift(seventh_chord, 5),
+    "F:maj", circshift(major_chord, 5),
+    "A:min", circshift(minor_chord, 9),
+    "C:7", circshift(seventh_chord, 0),
+    "C:maj", circshift(major_chord, 0),
+    "E:min", circshift(minor_chord, 4),
+    "G:7", circshift(seventh_chord, 7),
+    "G:maj", circshift(major_chord, 7),
+    "B:min", circshift(minor_chord, 11),
+    "D:7", circshift(seventh_chord, 2),
+    "D:maj", circshift(major_chord, 2),
+    "F#:min", circshift(minor_chord, 6),
+    "A:7", circshift(seventh_chord, 9),
+    "A:maj", circshift(major_chord, 9),
+    "C#:min", circshift(minor_chord, 1),
+    "E:7", circshift(seventh_chord, 4),
+    "E:maj", circshift(major_chord, 4),
+    "G#:min", circshift(minor_chord, 8),
+    "B:7", circshift(seventh_chord, 11),
+    "B:maj", circshift(major_chord, 11),
+    "D#:min", circshift(minor_chord, 3)
+  )
+
+key_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:maj", circshift(major_key, 6),
+    "Bb:min", circshift(minor_key, 10),
+    "Db:maj", circshift(major_key, 1),
+    "F:min", circshift(minor_key, 5),
+    "Ab:maj", circshift(major_key, 8),
+    "C:min", circshift(minor_key, 0),
+    "Eb:maj", circshift(major_key, 3),
+    "G:min", circshift(minor_key, 7),
+    "Bb:maj", circshift(major_key, 10),
+    "D:min", circshift(minor_key, 2),
+    "F:maj", circshift(major_key, 5),
+    "A:min", circshift(minor_key, 9),
+    "C:maj", circshift(major_key, 0),
+    "E:min", circshift(minor_key, 4),
+    "G:maj", circshift(major_key, 7),
+    "B:min", circshift(minor_key, 11),
+    "D:maj", circshift(major_key, 2),
+    "F#:min", circshift(minor_key, 6),
+    "A:maj", circshift(major_key, 9),
+    "C#:min", circshift(minor_key, 1),
+    "E:maj", circshift(major_key, 4),
+    "G#:min", circshift(minor_key, 8),
+    "B:maj", circshift(major_key, 11),
+    "D#:min", circshift(minor_key, 3)
+  )
+
+"features/nora-k-1.json" |> 
+  compmus_chroma(norm = "identity") |> 
+  compmus_match_pitch_templates(
+    chord_templates,         # Change to chord_templates if desired
+    norm = "identity",       # Try different norms (and match it with what you used in compmus_chroma)
+    distance = "cosine"   # Try different distance metrics
+  ) |>
+  ggplot(aes(x = time, y = name, fill = d)) + 
   geom_raster() +
-  scale_y_continuous(
-    breaks = 0:11,
-    minor_breaks = NULL,
-    labels = c(
-                "C", "C#|Db", "D", "D#|Eb",
-                "E", "F", "F#|Gb", "G",
-                "G#|Ab", "A", "A#|Bb", "B"
-              )
-  ) +
   scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
-  theme_classic()                                      # Change the theme? 
+  labs(x = "Time (s)", y = "Template", fill = NULL) +
+  theme_classic()   
+
 ```
-
-The R&B song uses overall only 2 pitchclasses, while in the middle part it almost uses every chord.
-
-#### Chroma - Track 2
+The frequent use of the seventh chord indicates a blues influence, as it's used to add harmonic richness and tension. The repetition of chord sequences indicates the theme that is present in the whole song. 
 
 ```{r echo=FALSE}
-"features/nora-k-2.json" |>                           # Change the track
-  compmus_chroma(norm = "identity") |>                 # Change the norm
-  ggplot(aes(x = time, y = pc, fill = value)) + 
+major_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
+minor_chord <-
+  c(   1,    0,    0,    1,    0,    0,    0,    1,    0,    0,    0,    0)
+seventh_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    1,    0)
+
+major_key <-
+  c(5.0, 2.0, 3.5, 2.5, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 2.0, 2.5)
+
+minor_key <-
+  c(5.0, 2.5, 3.5, 4.5, 2.0, 3.5, 2.0, 4.0, 3.5, 2.5, 3.0, 2.5)
+
+chord_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:7", circshift(seventh_chord, 6),
+    "Gb:maj", circshift(major_chord, 6),
+    "Bb:min", circshift(minor_chord, 10),
+    "Db:maj", circshift(major_chord, 1),
+    "F:min", circshift(minor_chord, 5),
+    "Ab:7", circshift(seventh_chord, 8),
+    "Ab:maj", circshift(major_chord, 8),
+    "C:min", circshift(minor_chord, 0),
+    "Eb:7", circshift(seventh_chord, 3),
+    "Eb:maj", circshift(major_chord, 3),
+    "G:min", circshift(minor_chord, 7),
+    "Bb:7", circshift(seventh_chord, 10),
+    "Bb:maj", circshift(major_chord, 10),
+    "D:min", circshift(minor_chord, 2),
+    "F:7", circshift(seventh_chord, 5),
+    "F:maj", circshift(major_chord, 5),
+    "A:min", circshift(minor_chord, 9),
+    "C:7", circshift(seventh_chord, 0),
+    "C:maj", circshift(major_chord, 0),
+    "E:min", circshift(minor_chord, 4),
+    "G:7", circshift(seventh_chord, 7),
+    "G:maj", circshift(major_chord, 7),
+    "B:min", circshift(minor_chord, 11),
+    "D:7", circshift(seventh_chord, 2),
+    "D:maj", circshift(major_chord, 2),
+    "F#:min", circshift(minor_chord, 6),
+    "A:7", circshift(seventh_chord, 9),
+    "A:maj", circshift(major_chord, 9),
+    "C#:min", circshift(minor_chord, 1),
+    "E:7", circshift(seventh_chord, 4),
+    "E:maj", circshift(major_chord, 4),
+    "G#:min", circshift(minor_chord, 8),
+    "B:7", circshift(seventh_chord, 11),
+    "B:maj", circshift(major_chord, 11),
+    "D#:min", circshift(minor_chord, 3)
+  )
+
+key_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:maj", circshift(major_key, 6),
+    "Bb:min", circshift(minor_key, 10),
+    "Db:maj", circshift(major_key, 1),
+    "F:min", circshift(minor_key, 5),
+    "Ab:maj", circshift(major_key, 8),
+    "C:min", circshift(minor_key, 0),
+    "Eb:maj", circshift(major_key, 3),
+    "G:min", circshift(minor_key, 7),
+    "Bb:maj", circshift(major_key, 10),
+    "D:min", circshift(minor_key, 2),
+    "F:maj", circshift(major_key, 5),
+    "A:min", circshift(minor_key, 9),
+    "C:maj", circshift(major_key, 0),
+    "E:min", circshift(minor_key, 4),
+    "G:maj", circshift(major_key, 7),
+    "B:min", circshift(minor_key, 11),
+    "D:maj", circshift(major_key, 2),
+    "F#:min", circshift(minor_key, 6),
+    "A:maj", circshift(major_key, 9),
+    "C#:min", circshift(minor_key, 1),
+    "E:maj", circshift(major_key, 4),
+    "G#:min", circshift(minor_key, 8),
+    "B:maj", circshift(major_key, 11),
+    "D#:min", circshift(minor_key, 3)
+  )
+
+"features/nora-k-2.json" |> 
+  compmus_chroma(norm = "identity") |> 
+  compmus_match_pitch_templates(
+    chord_templates,         # Change to chord_templates if desired
+    norm = "identity",       # Try different norms (and match it with what you used in compmus_chroma)
+    distance = "cosine"   # Try different distance metrics
+  ) |>
+  ggplot(aes(x = time, y = name, fill = d)) + 
   geom_raster() +
-  scale_y_continuous(
-    breaks = 0:11,
-    minor_breaks = NULL,
-    labels = c(
-                "C", "C#|Db", "D", "D#|Eb",
-                "E", "F", "F#|Gb", "G",
-                "G#|Ab", "A", "A#|Bb", "B"
-              )
-  ) +
   scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
-  theme_classic()                                      # Change the theme? 
-```
-
-This song shows a sustained activity across all pitch classes. It shows that this song is more intricate and has a complexer harmonic progression
-
-##### self-similarity track 1  {.tabset}
-```{r echo=FALSE}
-"features/nora-k-1.json" |>                           # Change the track
-  compmus_chroma(norm = "identity") |>                 # Change the norm
-  compmus_self_similarity(
-    feature = pc,
-    distance = "euclidean"                             # Change the distance
-  ) |>   
-  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
-  theme_classic()
-```
-
-It can be seen that the R&B track has a lot more similar parts in the song, as there are a lot of little black squares. This is because the clap and the synths are coming back with a repeated interval.
-
-##### self-similarity track 2 
-```{r echo=FALSE}
-"features/nora-k-2.json" |>                           # Change the track
-  compmus_chroma(norm = "identity") |>                 # Change the norm
-  compmus_self_similarity(
-    feature = pc,
-    distance = "euclidean"                             # Change the distance
-  ) |>   
-  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
-  theme_classic()
-```
-
-The latin track seems different but also the same, because it seems that the green lines are almost woven, this is because the beat is very similar but it has a sort of distortion above it. 
-
-##### tibre based similarity track 1
-
-```{r echo=FALSE}
-"features/nora-k-1.json" |>                           # Change the track
-  compmus_mfccs(norm = "identity") |>                  # Change the norm
-  compmus_self_similarity(
-    feature = mfcc,
-    distance = "euclidean"                             # Change the distance
-  ) |>   
-  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  labs(x = "Time (s)", y = "Template", fill = NULL) +
   theme_classic()   
 ```
 
-The fist part of the song is in terms of similarity 
-super similar untill the chorus, and after its again very similar but there are also a bit more changes.
-
-```{r echo=FALSE}
-"features/nora-k-2.json" |>                           # Change the track
-  compmus_mfccs(norm = "identity") |>                  # Change the norm
-  compmus_self_similarity(
-    feature = mfcc,
-    distance = "euclidean"                             # Change the distance
-  ) |>   
-  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
-  theme_classic()   
-```
-
-In the intro of this song it doesnt change much, but it does differ a lot from the rest of the song, the rest of the song has big chunks that are also simila except for the outro and a small part around 110 seconds.
-
+As can be seen there are many chords used, as you can hear. The structure can be seen throughout the song. The intro is from 0-25s then the verse 25-48s, chorus 48-75s verse 2 75-98s, chorus again 98-125s and then from 175s the outro.
 
 ### Introduction
 
@@ -295,6 +380,115 @@ ggplotly(p)
 
 This is an interactable chart, so if you hover above it you can see extra information. As can be seen from the chart the arousal is around the 4, this chart is very similar to the boxplot, except for valence we have arousal here. Again the arousal stays the same and you can see that the danceability varies a lot
 
+### Deep dive into the music {.tabset}  
+##### Chroma - Track 1
+
+```{r echo=FALSE}
+"features/nora-k-1.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  ggplot(aes(x = time, y = pc, fill = value)) + 
+  geom_raster() +
+  scale_y_continuous(
+    breaks = 0:11,
+    minor_breaks = NULL,
+    labels = c(
+                "C", "C#|Db", "D", "D#|Eb",
+                "E", "F", "F#|Gb", "G",
+                "G#|Ab", "A", "A#|Bb", "B"
+              )
+  ) +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()                                      # Change the theme? 
+```
+
+The R&B song uses overall only 2 pitchclasses, while in the middle part it almost uses every chord.
+
+#### Chroma - Track 2
+
+```{r, echo=FALSE}
+"features/nora-k-2.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  ggplot(aes(x = time, y = pc, fill = value)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()
+```
+
+This song shows a sustained activity across all pitch classes. It shows that this song is more intricate and has a complexer harmonic progression
+
+##### self-similarity track 1  {.tabset}
+```{r echo=FALSE}
+"features/nora-k-1.json" |> 
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  compmus_self_similarity(
+    feature = pc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()
+```
+
+It can be seen that the R&B track has a lot more similar parts in the song, as there are a lot of little black squares. This is because the clap and the synths are coming back with a repeated interval.
+
+
+##### self-similarity track 2 
+```{r echo=FALSE}
+"features/nora-k-2.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  compmus_self_similarity(
+    feature = pc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()
+```
+
+The latin track seems different but also the same, because it seems that the green lines are almost woven, this is because the beat is very similar but it has a sort of distortion above it. 
+
+##### tibre based similarity track 1
+
+```{r echo=FALSE}
+"features/nora-k-1.json" |>                           # Change the track
+  compmus_mfccs(norm = "identity") |>                  # Change the norm
+  compmus_self_similarity(
+    feature = mfcc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()   
+```
+
+The fist part of the song is in terms of similarity 
+super similar untill the chorus, and after its again very similar but there are also a bit more changes.
+
+##### tibre based similarity track 2
+
+```{r echo=FALSE}
+"features/nora-k-2.json" |>                           # Change the track
+  compmus_mfccs(norm = "identity") |>                  # Change the norm
+  compmus_self_similarity(
+    feature = mfcc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()   
+```
+
+In the intro of this song it doesnt change much, but it does differ a lot from the rest of the song, the rest of the song has big chunks that are also simila except for the outro and a small part around 110 seconds.
 
 ### Exclusive insights
 
