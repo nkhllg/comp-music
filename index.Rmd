@@ -17,6 +17,7 @@ source("compmus.R")
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
 ## Welcome to my dashboard!
 
 Later we'll dive further into the songs, for now here are 2 descriptions of the songs.
@@ -25,8 +26,220 @@ The first song has a dark, atmospheric 80s-inspired synthwave beat with smooth R
 
 The second song is dembow, reggaeton, cumbia, afro-latin fusion, rap, latin trap. It's like summer song that will bring you the back to the summer, made with Suno.ai
 
+### Insights to the whole corpus
+
+#### Tempi
+```{r echo=FALSE}
+df <- read_csv("compmus2025.csv")
+
+ggplot(df, aes(x = tempo)) +
+  geom_histogram(bins = 10, fill = "skyblue", color = "black") +
+  labs(title = "Histogram of Tempi for Class Corpus",
+       x = "Tempo (BPM)",
+       y = "Count") +
+  theme_minimal()
+```
+
+
+
+#### My contributions 
+
+```{r echo=FALSE, fig.height=6, fig.width=4}
+
+"features/nora-k-1.json" |>
+  compmus_tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+"features/nora-k-2.json" |>
+  compmus_tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+```
+
+Column {.sidebar}
+------------------------------------------------------------------------------------------------
+The songs in the whole corpus are not too fast or slow, as can be seen because there is a wide peak around 100BPM
+
+The first song has 2 drops in tempo around 50 and 90 seconds, and in the outro the tempo also changes up a bit.
+
+The second song's tempo is almost the same till 110s and after 145seconds in the outro 
+
+For more info go to the exclusive insights 
+
+----------------------------------------------------------------------------------------------
+
+### Introduction
+
+Hello, the introduction will come when we have the class corpus, so that's soon. For now, go to the discovery page.
+
+### Discovery
+
+First we have a few plots, so a better insight into the data can be created
+
+
+The histogram of danceability shows that most songs are moderately danceable
+
+
+The plots show us that a higher tempo does not indicate an higher danceability, more about this on the exclusive insights page. 
+
+The BPM is or on the lower side or above 110, this is because dance music is 110 BPM or above, while ballads or classical music are on the slower side. 
+
+
+The boxplot shows us that danceability and valence seem to be positively correlated, while the instrumentalness seems independant. It seems that the dataset has a high danceability and valence songs.
+
+This is an interactable chart, so if you hover above it you can see extra information. As can be seen from the chart the arousal is around the 4, this chart is very similar to the boxplot, except for valence we have arousal here. Again the arousal stays the same and you can see that the danceability varies a lot
+
+#### chart 1
+```{r echo=FALSE}
+aisc2024 <- read_csv('compmus2025.csv')
+
+# Histogram of Danceability
+ggplot(aisc2024, aes(x = danceability)) +
+  geom_histogram(binwidth = 0.05, fill = "purple", alpha = 0.7, color = "black") +
+  labs(title = "Histogram of Danceability", x = "Danceability", y = "Frequency") +
+  theme_minimal()
+```
+
+
+```{r echo=FALSE}
+# Scatter Plot of Danceability vs Tempo
+ggplot(aisc2024, aes(x = tempo, y = danceability)) +
+  geom_point(alpha = 0.7, color = "purple") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Danceability vs. Tempo", x = "Tempo (BPM)", y = "Danceability") +
+  theme_minimal()
+
+```
+
+
+
+#### chart 2
+```{r pressure, echo=FALSE}
+
+ggplot(aisc2024, aes(x=tempo)) +
+  geom_histogram(binwidth=10, fill="steelblue", color="black", alpha=0.7) +
+  theme_minimal() +
+  labs(title="Distribution of Tempo",
+       x="Tempo (BPM)",
+       y="Count") +
+  geom_density(aes(y=..count..*10), color="red", lwd=1.2)
+
+aisc2024$valence <- cut(aisc2024$valence, 
+                          breaks = c(0, 0.33, 0.66, 1), 
+                          labels = c("Low", "Medium", "High"))
+
+# Box plot: Danceability across Valence levels, colored by Instrumentalness
+ggplot(aisc2024, aes(x = valence, y = danceability, fill = valence)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+  geom_jitter(aes(color = instrumentalness), width = 0.2, alpha = 0.6) +  
+  scale_fill_manual(values = c("Low" = "blue", "Medium" = "orange", "High" = "red")) +
+  scale_color_gradient(low = "black", high = "white") +  
+  theme_minimal() +
+  labs(title = "Danceability Across Valence Levels (Instrumentalness in Points)",
+       x = "Valence Category",
+       y = "Danceability",
+       color = "Instrumentalness") +
+  theme(legend.position = "right")
+```
+
+
+#### chart 3 
+```{r echo=FALSE}
+library(dplyr)
+library(ggplot2)
+library(plotly)
+
+p <- aisc2024 |>
+  ggplot(
+    aes(
+      x = tempo,
+      y = arousal,
+      size = instrumentalness,
+      colour = danceability
+    )
+  ) +
+  geom_point(alpha = 0.7) +  # Regular points
+  
+  # Highlight Track 1
+  geom_point(
+    data = aisc2024 |> filter(tempo == 111, arousal == 5.0956),  
+    aes(size = 7),  
+    colour = "red",
+    shape = 21,
+    stroke = 1.5
+  ) +
+  
+  # Highlight Track 2
+  geom_point(
+    data = aisc2024 |> filter(tempo == 134, arousal == 5.34),  
+    aes(size = 7),  
+    colour = "blue",
+    shape = 21,
+    stroke = 1.5
+  ) +
+  
+  geom_rug(linewidth = 0.2, sides = "b", alpha = 0.5) +  
+  geom_text(
+    x = 111,
+    y = 5.0956,
+    label = "Track 1",
+    size = 4,
+    hjust = "left",
+    vjust = "center",
+    angle = 25,
+    colour = "black"
+  ) +
+  geom_text(
+    x = 134,
+    y = 5.34,
+    label = "Track 2",
+    size = 4,
+    hjust = "left",
+    vjust = "center",
+    angle = 25,
+    colour = "black"
+  ) +
+  # scale_x_continuous(
+  #   limits = c(50, 200),
+  #   breaks = seq(50, 200, 50),
+  #   minor_breaks = NULL
+  # ) +
+  scale_y_continuous(
+    limits = c(1, 9),
+    breaks = c(1, 5, 9),
+    minor_breaks = NULL
+  ) +
+  scale_colour_viridis_c(option = "plasma", direction = -1) +
+  scale_size_continuous(trans = "sqrt", guide = "none") +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "How Tempo and Arousal Relate in the Playlist",
+    subtitle = "Higher tempo generally correlates with higher arousal, with danceability as color",
+    x = "Tempo (BPM)",
+    y = "Arousal (1-9 Scale)",
+    colour = "Danceability"
+  )
+
+ggplotly(p)
+
+```
+
 
 ### Key profile
+
+song 1 chord
+The frequent use of the seventh chord indicates a blues influence, as it's used to add harmonic richness and tension. The repetition of chord sequences indicates the theme that is present in the whole song. 
+
+Song 2 chord 
+As can be seen there are many chords used, as you can hear. The structure can be seen throughout the song. The intro is from 0-25s then the verse 25-48s, chorus 48-75s verse 2 75-98s, chorus again 98-125s and then from 175s the outro.
+
 
 ##### Song 1
 ```{r echo=FALSE}
@@ -128,7 +341,6 @@ key_templates <-
 ```
 
 
-The frequent use of the seventh chord indicates a blues influence, as it's used to add harmonic richness and tension. The repetition of chord sequences indicates the theme that is present in the whole song. 
 
 ##### song 2
 ```{r echo=FALSE}
@@ -228,164 +440,28 @@ key_templates <-
   theme_classic()   
 ```
 
-As can be seen there are many chords used, as you can hear. The structure can be seen throughout the song. The intro is from 0-25s then the verse 25-48s, chorus 48-75s verse 2 75-98s, chorus again 98-125s and then from 175s the outro.
-
-### Introduction
-
-Hello, the introduction will come when we have the class corpus, so that's soon. For now, go to the discovery page.
-
-### Discovery {.tabset}
-First we have a few plots, so a better insight into the data can be created
 
 
+### Deep dive into the music
 
-#### chart 1
-```{r echo=FALSE}
-aisc2024 <- read_csv('compmus2025.csv')
+track 1
+chroma: The R&B song uses overall only 2 pitchclasses, while in the middle part it almost uses every chord.
 
-# Histogram of Danceability
-ggplot(aisc2024, aes(x = danceability)) +
-  geom_histogram(binwidth = 0.05, fill = "purple", alpha = 0.7, color = "black") +
-  labs(title = "Histogram of Danceability", x = "Danceability", y = "Frequency") +
-  theme_minimal()
-```
+self-similarity:
+It can be seen that the R&B track has a lot more similar parts in the song, as there are a lot of little black squares. This is because the clap and the synths are coming back with a repeated interval.
+
+timbre-based similarity: The fist part of the song is in terms of similarity super similar until the chorus, and after its again very similar but there are also a bit more changes.
 
 
-The histogram of danceability shows that most songs are moderately danceable
+track 2
+chroma :
+This song shows a sustained activity across all pitch classes. It shows that this song is more intricate and has a complexer harmonic progression
 
-```{r echo=FALSE}
-# Scatter Plot of Danceability vs Tempo
-ggplot(aisc2024, aes(x = tempo, y = danceability)) +
-  geom_point(alpha = 0.7, color = "purple") +
-  geom_smooth(method = "lm", se = FALSE, color = "red") +
-  labs(title = "Danceability vs. Tempo", x = "Tempo (BPM)", y = "Danceability") +
-  theme_minimal()
+self-similarity: The latin track seems different but also the same, because it seems that the green lines are almost woven, this is because the beat is very similar but it has a sort of distortion above it. 
 
-```
+timbre-based similarity: In the intro of this song it doesnt change much, but it does differ a lot from the rest of the song, the rest of the song has big chunks that are also simila except for the outro and a small part around 110 seconds.
 
-
-The plots show us that a higher tempo does not indicate an higher danceability, more about this on the exclusive insights page. 
-
-#### chart 2
-```{r pressure, echo=FALSE}
-
-ggplot(aisc2024, aes(x=tempo)) +
-  geom_histogram(binwidth=10, fill="steelblue", color="black", alpha=0.7) +
-  theme_minimal() +
-  labs(title="Distribution of Tempo",
-       x="Tempo (BPM)",
-       y="Count") +
-  geom_density(aes(y=..count..*10), color="red", lwd=1.2)
-
-aisc2024$valence <- cut(aisc2024$valence, 
-                          breaks = c(0, 0.33, 0.66, 1), 
-                          labels = c("Low", "Medium", "High"))
-
-# Box plot: Danceability across Valence levels, colored by Instrumentalness
-ggplot(aisc2024, aes(x = valence, y = danceability, fill = valence)) +
-  geom_boxplot(alpha = 0.7, outlier.shape = NA) +
-  geom_jitter(aes(color = instrumentalness), width = 0.2, alpha = 0.6) +  
-  scale_fill_manual(values = c("Low" = "blue", "Medium" = "orange", "High" = "red")) +
-  scale_color_gradient(low = "black", high = "white") +  
-  theme_minimal() +
-  labs(title = "Danceability Across Valence Levels (Instrumentalness in Points)",
-       x = "Valence Category",
-       y = "Danceability",
-       color = "Instrumentalness") +
-  theme(legend.position = "right")
-```
-
-
-The BPM is or on the lower side or above 110, this is because dance music is 110 BPM or above, while ballads or classical music are on the slower side. 
-
-
-The boxplot shows us that danceability and valence seem to be positively correlated, while the instrumentalness seems independant. It seems that the dataset has a high danceability and valence songs.
-
-#### chart 3 
-```{r echo=FALSE}
-library(dplyr)
-library(ggplot2)
-library(plotly)
-
-p <- aisc2024 |>
-  ggplot(
-    aes(
-      x = tempo,
-      y = arousal,
-      size = instrumentalness,
-      colour = danceability
-    )
-  ) +
-  geom_point(alpha = 0.7) +  # Regular points
-  
-  # Highlight Track 1
-  geom_point(
-    data = aisc2024 |> filter(tempo == 111, arousal == 5.0956),  
-    aes(size = 7),  
-    colour = "red",
-    shape = 21,
-    stroke = 1.5
-  ) +
-  
-  # Highlight Track 2
-  geom_point(
-    data = aisc2024 |> filter(tempo == 134, arousal == 5.34),  
-    aes(size = 7),  
-    colour = "blue",
-    shape = 21,
-    stroke = 1.5
-  ) +
-  
-  geom_rug(linewidth = 0.2, sides = "b", alpha = 0.5) +  
-  geom_text(
-    x = 111,
-    y = 5.0956,
-    label = "Track 1",
-    size = 4,
-    hjust = "left",
-    vjust = "center",
-    angle = 25,
-    colour = "black"
-  ) +
-  geom_text(
-    x = 134,
-    y = 5.34,
-    label = "Track 2",
-    size = 4,
-    hjust = "left",
-    vjust = "center",
-    angle = 25,
-    colour = "black"
-  ) +
-  # scale_x_continuous(
-  #   limits = c(50, 200),
-  #   breaks = seq(50, 200, 50),
-  #   minor_breaks = NULL
-  # ) +
-  scale_y_continuous(
-    limits = c(1, 9),
-    breaks = c(1, 5, 9),
-    minor_breaks = NULL
-  ) +
-  scale_colour_viridis_c(option = "plasma", direction = -1) +
-  scale_size_continuous(trans = "sqrt", guide = "none") +
-  theme_minimal(base_size = 14) +
-  labs(
-    title = "How Tempo and Arousal Relate in the Playlist",
-    subtitle = "Higher tempo generally correlates with higher arousal, with danceability as color",
-    x = "Tempo (BPM)",
-    y = "Arousal (1-9 Scale)",
-    colour = "Danceability"
-  )
-
-ggplotly(p)
-
-```
-
-This is an interactable chart, so if you hover above it you can see extra information. As can be seen from the chart the arousal is around the 4, this chart is very similar to the boxplot, except for valence we have arousal here. Again the arousal stays the same and you can see that the danceability varies a lot
-
-### Deep dive into the music {.tabset}  
-##### Chroma - Track 1
+#### Chroma - Track 1
 
 ```{r echo=FALSE}
 "features/nora-k-1.json" |>                           # Change the track
@@ -406,8 +482,6 @@ This is an interactable chart, so if you hover above it you can see extra inform
   theme_classic()                                      # Change the theme? 
 ```
 
-The R&B song uses overall only 2 pitchclasses, while in the middle part it almost uses every chord.
-
 #### Chroma - Track 2
 
 ```{r, echo=FALSE}
@@ -419,8 +493,6 @@ The R&B song uses overall only 2 pitchclasses, while in the middle part it almos
   labs(x = "Time (s)", y = NULL, fill = NULL) +
   theme_classic()
 ```
-
-This song shows a sustained activity across all pitch classes. It shows that this song is more intricate and has a complexer harmonic progression
 
 ##### self-similarity track 1  {.tabset}
 ```{r echo=FALSE}
@@ -436,8 +508,6 @@ This song shows a sustained activity across all pitch classes. It shows that thi
   labs(x = "Time (s)", y = NULL, fill = NULL) +
   theme_classic()
 ```
-
-It can be seen that the R&B track has a lot more similar parts in the song, as there are a lot of little black squares. This is because the clap and the synths are coming back with a repeated interval.
 
 
 ##### self-similarity track 2 
@@ -455,8 +525,6 @@ It can be seen that the R&B track has a lot more similar parts in the song, as t
   theme_classic()
 ```
 
-The latin track seems different but also the same, because it seems that the green lines are almost woven, this is because the beat is very similar but it has a sort of distortion above it. 
-
 ##### tibre based similarity track 1
 
 ```{r echo=FALSE}
@@ -473,8 +541,6 @@ The latin track seems different but also the same, because it seems that the gre
   theme_classic()   
 ```
 
-The fist part of the song is in terms of similarity 
-super similar untill the chorus, and after its again very similar but there are also a bit more changes.
 
 ##### tibre based similarity track 2
 
@@ -492,7 +558,7 @@ super similar untill the chorus, and after its again very similar but there are 
   theme_classic()   
 ```
 
-In the intro of this song it doesnt change much, but it does differ a lot from the rest of the song, the rest of the song has big chunks that are also simila except for the outro and a small part around 110 seconds.
+
 
 ### Exclusive insights
 
@@ -501,3 +567,5 @@ While it seems shocking, danceability and tempo are not directly correlated, it'
 If you have a high tempo song, like an EDM song but with a bad rhythm it will not make it danceable, while if you have a slow song you could also slow dance on it and that will make it danceable. It's also important how you define danceable, if its only jumping up and down then the plot would have to change. A song with a high tempo but low energy may not have the same danceable impact as a moderate-tempo track with high energy and rhythm.
 
 Both songs have a very strong structure, this is because it's AI generated and it probabily follows a formula to make a song.
+
+When comparing the timbre-based self similarity matrix and the tempogram we can see that they show on similar places the difference. 

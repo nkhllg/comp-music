@@ -1,96 +1,82 @@
+---
+  title: "My Portfolio for Computational Musicology 2025"
+author: "Nora Kahleogullari"
+date: "Block 4"
+output: 
+  flexdashboard::flex_dashboard:
+  storyboard: true
+---
+  
+```{r setup, include=FALSE}
 library(tidyverse)
 library(flexdashboard)
 library(plotly)
-library(shiny)
+library(tibble)
+#library(shiny)
 source("compmus.R")
-
-### Deep dive into the music {.tabset}  
-
-
-selectInput("track", "Choose a Track:", 
-            choices = c("Track 1" = "features/nora-k-1.json", 
-                        "Track 2" = "features/nora-k-2.json"),
-            selected = 'features/nora-k-1.json')
-
-##### Chroma - Track 1
-
-renderPlot({
-  input$track |>                           # Change the track
-    compmus_chroma(norm = "identity") |>                 # Change the norm
-    ggplot(aes(x = time, y = pc, fill = value)) + 
-    geom_raster() +
-    scale_y_continuous(
-      breaks = 0:11,
-      minor_breaks = NULL,
-      labels = c(
-        "C", "C#|Db", "D", "D#|Eb",
-        "E", "F", "F#|Gb", "G",
-        "G#|Ab", "A", "A#|Bb", "B"
-      )
-    ) +
-    scale_fill_viridis_c(guide = "none") +               # Change the colours?
-    labs(x = "Time (s)", y = NULL, fill = NULL) +
-    theme_classic()                                      # Change the theme? 
-}, height = 400, width = 600)
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 
-renderText({
-  if (input$track == 'features/nora-k-1.json'){
-    "The R&B song uses overall only 2 pitchclasses, while in the middle part it almost uses every chord."
-  } else {
-    "This song shows a sustained activity across all pitch classes. It shows that this song is more intricate and has a complexer harmonic progression"
-  }
-})
+## Welcome to my dashboard!
+
+Later we'll dive further into the songs, for now here are 2 descriptions of the songs.
+
+The first song has a dark, atmospheric 80s-inspired synthwave beat with smooth R&B elements, like The Weeknd , moody, energetic, downtempo, its made with Udio.ai
+
+The second song is dembow, reggaeton, cumbia, afro-latin fusion, rap, latin trap. It's like summer song that will bring you the back to the summer, made with Suno.ai
+
+### Insights to the whole corpus
+
+#### Tempi
+
+Column {data-width=650}
+-----------------------------------------------------------------------------------------
+  ```{r echo=FALSE}
+df <- read_csv("compmus2025.csv")
+
+ggplot(df, aes(x = tempo)) +
+  geom_histogram(bins = 10, fill = "skyblue", color = "black") +
+  labs(title = "Histogram of Tempi for Class Corpus",
+       x = "Tempo (BPM)",
+       y = "Count") +
+  theme_minimal()
+```
 
 
-##### self-similarity track 1  {.tabset}
-renderPlot({
-  input$track |>                           # Change the track
-    compmus_chroma(norm = "identity") |>                 # Change the norm
-    compmus_self_similarity(
-      feature = pc,
-      distance = "euclidean"                             # Change the distance
-    ) |>   
-    ggplot(aes(x = xtime, y = ytime, fill = d)) + 
-    geom_raster() +
-    scale_fill_viridis_c(guide = "none") +               # Change the colours?
-    labs(x = "Time (s)", y = NULL, fill = NULL) +
-    theme_classic()
-}, height = 400, width = 600)
 
+#### My contributions 
 
-renderText({
-  if (input$track == 'features/nora-k-1.json'){
-    "It can be seen that the R&B track has a lot more similar parts in the song, as there are a lot of little black squares. This is because the clap and the synths are coming back with a repeated interval."
-  } else {
-    "The latin track seems different but also the same, because it seems that the green lines are almost woven, this is because the beat is very similar but it has a sort of distortion above it."
-  }
-})
+```{r echo=FALSE, fig.height=6, fig.width=4}
 
+"features/nora-k-1.json" |>
+  compmus_tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
 
-##### tibre based similarity track 1
+"features/nora-k-2.json" |>
+  compmus_tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+```
 
-renderPlot({
-  input$track |>                           # Change the track
-    compmus_mfccs(norm = "identity") |>                  # Change the norm
-    compmus_self_similarity(
-      feature = mfcc,
-      distance = "euclidean"                             # Change the distance
-    ) |>   
-    ggplot(aes(x = xtime, y = ytime, fill = d)) + 
-    geom_raster() +
-    scale_fill_viridis_c(guide = "none") +               # Change the colours?
-    labs(x = "Time (s)", y = NULL, fill = NULL) +
-    theme_classic()   
-}, height = 400, width = 600)
+-----------------------------------------------------------------------------------------
+  
+  Column {.sidebar}
+------------------------------------------------------------------------------------------
+  The songs in the whole corpus are not too fast or slow, as can be seen because there is a wide peak around 100BPM
 
+The first song has 2 drops in tempo around 50 and 90 seconds, and in the outro the tempo also changes up a bit.
 
-renderText({
-  if (input$track == 'features/nora-k-1.json'){
-    "The fist part of the song is in terms of similarity 
-super similar untill the chorus, and after its again very similar but there are also a bit more changes.
-"
-  } else {
-    "In the intro of this song it doesnt change much, but it does differ a lot from the rest of the song, the rest of the song has big chunks that are also simila except for the outro and a small part around 110 seconds."
-  }
-})
+The second song's tempo is almost the same till 110s and after 145seconds in the outro 
+
+For more info go to the exclusive insights 
+
+-------------------------------------------------------------------------------------------
+

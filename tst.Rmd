@@ -1,0 +1,171 @@
+---
+title: "My Portfolio for Computational Musicology 2025"
+author: "Nora Kahleogullari"
+date: "Block 4"
+output: 
+  flexdashboard::flex_dashboard:
+    storyboard: true
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(flexdashboard)
+library(plotly)
+library(tibble)
+#library(shiny)
+source("compmus.R")
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Welcome to my dashboard!
+
+This dashboard includes insights into music analysis, visualizations, and key musical features.
+
+### Tab 1: Tempi and Music Features
+
+Column {data-width=300}
+-----------------------------------------------------------------------------------------
+
+### Insights
+
+The first song has a dark, atmospheric 80s-inspired synthwave beat with smooth R&B elements, like The Weeknd, moody, energetic, downtempo, made with Udio.ai.
+
+The second song is dembow, reggaeton, cumbia, afro-latin fusion, rap, latin trap. It's like a summer song that will bring you back to the summer, made with Suno.ai.
+
+#### Song Analysis
+
+```{r echo=FALSE}
+"features/nora-k-1.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  ggplot(aes(x = time, y = pc, fill = value)) + 
+  geom_raster() +
+  scale_y_continuous(
+    breaks = 0:11,
+    minor_breaks = NULL,
+    labels = c(
+                "C", "C#|Db", "D", "D#|Eb",
+                "E", "F", "F#|Gb", "G",
+                "G#|Ab", "A", "A#|Bb", "B"
+              )
+  ) +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()                                      # Change the theme? 
+```
+
+### Tab 2: Discovery and Insights into Arousal
+
+Column {data-width=300}
+------------------------------------------------------------------------------------------
+
+### More Insights
+
+The dataset contains several features related to danceability, tempo, and arousal. This section focuses on the relationships between these features.
+
+#### Danceability and Tempo
+
+```{r echo=FALSE}
+aisc2024 <- read_csv('compmus2025.csv')
+
+# Scatter Plot of Danceability vs Tempo
+ggplot(aisc2024, aes(x = tempo, y = danceability)) +
+  geom_point(alpha = 0.7, color = "purple") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Danceability vs. Tempo", x = "Tempo (BPM)", y = "Danceability") +
+  theme_minimal()
+```
+
+### Analysis of the Data
+
+Column {data-width=300}
+------------------------------------------------------------------------------------------
+
+#### Insights into Tempo
+
+The histogram shows that most songs are moderately danceable. Higher tempo correlates with higher danceability, but not in every case. Songs that are more instrumental tend to have lower danceability.
+
+---
+
+### Interactive Plots
+
+Column {data-width=300}
+------------------------------------------------------------------------------------------
+
+#### Chart 1
+
+```{r echo=FALSE}
+# Scatter Plot for Tempo vs Arousal, with Instrumentalness and Danceability
+p <- aisc2024 |>
+  ggplot(
+    aes(
+      x = tempo,
+      y = arousal,
+      size = instrumentalness,
+      colour = danceability
+    )
+  ) +
+  geom_point(alpha = 0.7) +  # Regular points
+  
+  # Highlight Track 1
+  geom_point(
+    data = aisc2024 |> filter(tempo == 111, arousal == 5.0956),  
+    aes(size = 7),  
+    colour = "red",
+    shape = 21,
+    stroke = 1.5
+  ) +
+  
+  # Highlight Track 2
+  geom_point(
+    data = aisc2024 |> filter(tempo == 134, arousal == 5.34),  
+    aes(size = 7),  
+    colour = "blue",
+    shape = 21,
+    stroke = 1.5
+  ) +
+  
+  geom_rug(linewidth = 0.2, sides = "b", alpha = 0.5) +  
+  geom_text(
+    x = 111,
+    y = 5.0956,
+    label = "Track 1",
+    size = 4,
+    hjust = "left",
+    vjust = "center",
+    angle = 25,
+    colour = "black"
+  ) +
+  geom_text(
+    x = 134,
+    y = 5.34,
+    label = "Track 2",
+    size = 4,
+    hjust = "left",
+    vjust = "center",
+    angle = 25,
+    colour = "black"
+  ) +
+  scale_y_continuous(
+    limits = c(1, 9),
+    breaks = c(1, 5, 9),
+    minor_breaks = NULL
+  ) +
+  scale_colour_viridis_c(option = "plasma", direction = -1) +
+  scale_size_continuous(trans = "sqrt", guide = "none") +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "How Tempo and Arousal Relate in the Playlist",
+    subtitle = "Higher tempo generally correlates with higher arousal, with danceability as color",
+    x = "Tempo (BPM)",
+    y = "Arousal (1-9 Scale)",
+    colour = "Danceability"
+  )
+
+ggplotly(p)
+```
+
+### Final Insights
+
+Each tab in the `flexdashboard` now has a specific sidebar that provides context or insight relevant to the content displayed within the tab. The sidebar content will change dynamically when you switch between tabs.
+
+This approach leverages `flexdashboard`'s ability to place sidebars under each individual section (`Column`). By customizing the sidebar content in each column, we ensure that the sidebar updates based on the active tab.
