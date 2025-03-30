@@ -22,6 +22,8 @@ library(plotly)
 library(ggcorrplot)
 library(tibble)
 library(kableExtra)
+library(randomForest)
+library(caret)
 #library(shiny)
 source("compmus.R")
 knitr::opts_chunk$set(echo = TRUE)
@@ -75,18 +77,25 @@ First we have a few plots, so a better insight into the data can be created
 The histogram of danceability shows that most songs are moderately danceable
 
 
-The plots show us that a higher tempo does not indicate an higher danceability, more about this on the exclusive insights page. 
+The plots show us that a higher tempo does not indicate an higher danceability. While it may seem suprising, danceability depends on multiple factors, including, rhythm, valence, instrumentation and arousal, rather than just tempo. 
 
-The BPM is or on the lower side or above 110, this is because dance music is 110 BPM or above, while ballads or classical music are on the slower side. 
+A high-tempo song (e.g., EDM) with poor rhythm may feel less danceable.. The definition of dancability also matters - if it strictly means jumping to the bet, the interpretation would change. A song with high tempo but low energy may not feel as danceable as a moderate-tempo track with a strong rhythm and energy.
 
+Tempo distribution reveals a tendency toward either lower BPM values or BPM's above 110. This aligns with expectations: dance, music typically exceeds 110 BPM, while ballads and classical pieces tend to be slower.
 
-The boxplot shows us that danceability and valence seem to be positively correlated, while the instrumentalness seems independant. It seems that the dataset has a high danceability and valence songs.
+The boxplot suggests a positive correlation between danceability and valence, whereas instrumentalness appears independant of danceability. 
+The dataset contains many high-danceability, high-valence tracks.
 
-This is an interactable chart, so if you hover above it you can see extra information. As can be seen from the chart the arousal is around the 4, this chart is very similar to the boxplot, except for valence we have arousal here. Again the arousal stays the same and you can see that the danceability varies a lot
+The interactive chart allows you to hover for additional details. It shows that arousal hovers around 4, and while danceability fluctates, arousal remains fairly stable. This chart resembles the boxplot but focuses on arousal instead of valence. 
+
+The heatmap reveals the following correlation:
+- A positive relationship between engagement and arousal, dancebility and arousal and engagement and dancebility
+- A negative correlation between instrumentalness and arousal
+
 
 Column {data-width = 1100}
 ----------------------------------------------------
-### chart 1
+
 ```{r echo=FALSE}
 aisc2024 <- read_csv('compmus2025.csv')
 
@@ -106,8 +115,6 @@ ggplot(aisc2024, aes(x = tempo, y = danceability)) +
 ```
 
 
-
-### chart 2
 ```{r pressure, echo=FALSE}
 
 ggplot(aisc2024, aes(x=tempo)) +
@@ -137,7 +144,6 @@ ggplot(aisc2024, aes(x = valence, y = danceability, fill = valence)) +
 ```
 
 
-### chart 3 
 ```{r echo=FALSE}
 library(dplyr)
 library(ggplot2)
@@ -223,8 +229,8 @@ corr_matrix <- cor(aisc2024[, -c(1,8)])
 ggcorrplot(corr_matrix, method = "circle")
 ```
 
-```{r echo=FALSE}
-ggplot(aisc2024, aes(x = tempo, y = danceability)) +
+```{r echo=FALSE, fig.height=5, fig.weigth=7}
+ggplot(aisc2024, aes(x = engagingness, y = arousal)) +
   geom_point() +
   facet_wrap(~ ai) +  
   theme_minimal()
@@ -236,17 +242,16 @@ Insights to the whole corpus
 Column {.sidebar data-width=350}
 -----------------------------------------------------
 ### Description
-The songs in the whole corpus are not too fast or slow, as can be seen because there is a wide peak around 100BPM
+The songs in the corpus generally maintain a moderate tempo, as evidenced by a broad peak around 100 BPM
 
-The first song has 2 drops in tempo around 50 and 90 seconds, and in the outro the tempo also changes up a bit.
+In the first song, there are two noticeable tempo drops around 50 and 90 seconds, with additional tempo variations in the outro.
 
-The second song’s tempo is almost the same till 110s and after 145seconds in the outro
+The second song maintains a steady tempo until 110 seconds, and after it stays steady until 145 seconds in the outro 
 
-For more info go to the exclusive insights
 
 Column {data-width=1150}
 ------------------------------------------------
-### Tempi
+Tempi
 ```{r echo=FALSE}
 df <- read_csv("compmus2025.csv")
 
@@ -259,7 +264,7 @@ ggplot(df, aes(x = tempo)) +
 ```
 
 
-### My contributions 
+My contributions 
 
 ```{r echo=FALSE, fig.height=6, fig.width=4}
 
@@ -525,7 +530,9 @@ Column {.tabset}
 ------------------------------------------------------
 ### Track 1 
 
-```{r echo=FALSE}
+
+####### chromagram
+```{r echo=FALSE, fig.height=5, fig.width=5}
 "features/nora-k-1.json" |>                           # Change the track
   compmus_chroma(norm = "identity") |>                 # Change the norm
   ggplot(aes(x = time, y = pc, fill = value)) + 
@@ -540,12 +547,14 @@ Column {.tabset}
               )
   ) +
   scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
-  theme_classic()                                      # Change the theme? 
+  labs(x = "Time (s)", y = NULL, fill = NULL, title="Chromagram track 1") +
+  theme_classic()                                     
+
+```
 
 
-#### self-similarity track 1
-
+#######  self-similarity
+```{r, echo=FALSE, fig.height=5, fig.width=5}
 "features/nora-k-1.json" |>                           # Change the track
   compmus_chroma(norm = "identity") |>                 # Change the norm
   compmus_self_similarity(
@@ -555,11 +564,14 @@ Column {.tabset}
   ggplot(aes(x = xtime, y = ytime, fill = d)) + 
   geom_raster() +
   scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  labs(x = "Time (s)", y = NULL, fill = NULL,
+       title="self-similarity track 1") +
   theme_classic()
+```
 
-#### tibre based similarity track 1
 
+####### timbre-based similarity
+```{r, echo=FALSE, fig.height=5, fig.width=5}
 "features/nora-k-1.json" |>                           # Change the track
   compmus_mfccs(norm = "identity") |>                  # Change the norm
   compmus_self_similarity(
@@ -569,15 +581,16 @@ Column {.tabset}
   ggplot(aes(x = xtime, y = ytime, fill = d)) + 
   geom_raster() +
   scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  labs(x = "Time (s)", y = NULL, fill = NULL,
+       title="timbre based similarity track 1") +
   theme_classic()   
 ```
 
 
 ### Track 2
 
-```{r, echo=FALSE}
-
+####### Chromagram
+```{r, echo=FALSE, fig.height=5, fig.width=5}
 #### Chroma - Track 2
 
 "features/nora-k-2.json" |>                           # Change the track
@@ -585,12 +598,14 @@ Column {.tabset}
   ggplot(aes(x = time, y = pc, fill = value)) + 
   geom_raster() +
   scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  labs(x = "Time (s)", y = NULL, fill = NULL,
+       title="Chromagram track 2") +
   theme_classic()
+```
 
 
-#### self-similarity track 2 
-
+#######  self-similarity
+```{r echo=FALSE, fig.height=5, fig.width=5}
 "features/nora-k-2.json" |>                           # Change the track
   compmus_chroma(norm = "identity") |>                 # Change the norm
   compmus_self_similarity(
@@ -600,11 +615,14 @@ Column {.tabset}
   ggplot(aes(x = xtime, y = ytime, fill = d)) + 
   geom_raster() +
   scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  labs(x = "Time (s)", y = NULL, fill = NULL,
+       title="self similarity track 2") +
   theme_classic()
+```
 
-#### tibre based similarity track 2
 
+#######  timbre based self similarity
+```{r echo=FALSE, fig.height=5, fig.width=5}
 "features/nora-k-2.json" |>                           # Change the track
   compmus_mfccs(norm = "identity") |>                  # Change the norm
   compmus_self_similarity(
@@ -614,9 +632,69 @@ Column {.tabset}
   ggplot(aes(x = xtime, y = ytime, fill = d)) + 
   geom_raster() +
   scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  labs(x = "Time (s)", y = NULL, fill = NULL,
+       title="timbre based similarity track 2") +
   theme_classic()   
 
+```
+
+
+Power Novelty
+===============================================
+Column {.sidebar data-width=400}
+------------------------------------------------
+### Description 
+
+Track 1:
+The first peak in the energy novelty is at the beginning just before the lyrics starts, when you hear a drum/buzz that indicates when the real beats starts. The second peak is around 55seconds when the beat changes and it becomes lighter and less heavy. The third peak is also seen in the spectral novelty when the beats begins to start again.
+
+
+Track 2:
+In the energy novelty graph, there are 3 high peaks, indicating percussive detection, the first is when the music comes in, the second peak is again around 55secons its when she says a bacho, so that is a harsh sound. The final peak see we also in the spectral novelty graph. It shows that around 110-120 seconds there is a drop, thats because there is an instrumental break before the lyrics an beat start again.
+
+Column {.tabset}
+------------------------------------------------
+
+### Track 1
+
+```{r, echo=FALSE, fig.height=5, fig.width=4}
+"features/nora-k-1.json" |>
+  compmus_energy_novelty() |> 
+  ggplot(aes(t, novelty)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "Energy Novelty", title="Energy Novelty Track 1")
+
+
+
+"features/nora-k-1.json" |> 
+  compmus_spectral_novelty() |> 
+  ggplot(aes(t, novelty)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "Spectral Novelty", title="Spectral Novelty Track 1")
+```
+
+
+
+### Track 2
+
+```{r echo=FALSE, fig.height=5, fig.width=4}
+"features/nora-k-2.json" |>
+  compmus_energy_novelty() |> 
+  ggplot(aes(t, novelty)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "Energy Novelty", title="Energy Novelty Track 2")
+
+
+
+"features/nora-k-2.json" |> 
+  compmus_spectral_novelty() |> 
+  ggplot(aes(t, novelty)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "Spectral Novelty", title="Spectral Novelty Track 2")
 ```
 
 
@@ -735,14 +813,82 @@ indie_forest_resampled |> get_pr()
 
 ```
 
+Clustering
+================================================
+
+Column {.sidebar data-width=400}
+-----------------------------------------------
+### Description 
+
+
+
+
+Column {data-width = 1100}
+-------------------------------------------------
+
+```{r echo=FALSE}
+get_conf_mat <- function(fit) {
+  outcome <- .get_tune_outcome_names(fit)
+  fit |> 
+    collect_predictions() |> 
+    conf_mat(truth = outcome, estimate = .pred_class)
+}  
+
+get_pr <- function(fit) {
+  fit |> 
+    conf_mat_resampled() |> 
+    group_by(Prediction) |> mutate(precision = Freq / sum(Freq)) |> 
+    group_by(Truth) |> mutate(recall = Freq / sum(Freq)) |> 
+    ungroup() |> filter(Prediction == Truth) |> 
+    select(class = Prediction, precision, recall)
+}  
+
+aisc2024$valence <- as.numeric(as.character(aisc2024$valence))
+
+cluster_juice <-
+  recipe(
+    filename ~
+      arousal +
+      danceability +
+      instrumentalness +
+      tempo +
+      valence,
+    data = aisc2024
+  ) |>
+  step_center(all_predictors()) |>
+  step_scale(all_predictors()) |> 
+  # step_range(all_predictors()) |> 
+  prep(aisc2024) |>
+  juice() |>
+  column_to_rownames("filename")
+
+
+compmus_dist <- dist(cluster_juice, method = "euclidean")
+
+compmus_dist |> 
+  hclust(method = "average") |> # Try single, average, and complete.
+  dendro_data() |>
+  ggdendrogram()
+```
+
+
+
+```{r echo=FALSE}
+library(cluster)
+
+silhouette_score <- function(dist_matrix, clustering) {
+  silhouette(clustering, dist_matrix) |> summary()
+}
+
+compmus_hclust <- hclust(compmus_dist, method = "average") # Adjust method
+
+cluster_assignments <- cutree(compmus_hclust, k = 8) # Change k as needed
+silhouette_score(compmus_dist, cluster_assignments)
+```
 
 Exclusive insights
 =========================================
 
-While it seems shocking, danceability and tempo are not directly correlated, it's among other things dependent on the rhythm, valence, instrumentation and arousal.
-
-If you have a high tempo song, like an EDM song but with a bad rhythm it will not make it danceable, while if you have a slow song you could also slow dance on it and that will make it danceable. It's also important how you define danceable, if its only jumping up and down then the plot would have to change. A song with a high tempo but low energy may not have the same danceable impact as a moderate-tempo track with high energy and rhythm.
-
 Both songs have a very strong structure, this is because it's AI generated and it probabily follows a formula to make a song.
 
-When comparing the timbre-based self similarity matrix and the tempogram we can see that they show on similar places the difference. 
+When comparing the timbre-based self similarity matrix and the tempogram we can see that they show on similar places the difference.

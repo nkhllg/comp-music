@@ -5,34 +5,248 @@ date: "Block 4"
 output: 
   flexdashboard::flex_dashboard:
   storyboard: true
+theme:
+  bg: "#e9fce6"
+fg: "#4a4949"
+primary: "#87f5a2"
+navbar-bg: "#86f0c4"
 ---
   
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(tidymodels)
+library(ggdendro)
+library(heatmaply)
 library(flexdashboard)
 library(plotly)
+library(ggcorrplot)
 library(tibble)
+library(kableExtra)
+library(randomForest)
+library(caret)
 #library(shiny)
 source("compmus.R")
 knitr::opts_chunk$set(echo = TRUE)
+aisc2024 <- read_csv('compmus2025.csv')
+```
+
+Introduction
+=================================================
+  
+  The first song I created is a dark, 80's inspired R&B track I wanted to make something similar to the Weeknd's music, because I always loved his ability to blend nostalgia with a modern edge. I tried to implement synths and R&B to create his atmospheric yet energetic sound. My goals was to capture the listeners emotionally, while still having a strong rhythm and melody. 
+
+My prompt for the first song was and it is made with Udio.ai: 
+  song has a dark, atmospheric 80s-inspired synthwave beat with smooth R&B elements, like The Weeknd , moody, energetic, downtempo
+
+'<audio controls>
+  <source src="nora-k-1.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>'
+
+For the second song I decided to create a Latin summer song because I like the vibrant energy and the strong rhythms. There's something about Latin music and instantly puts you in a good mood, it's lively and perfect for warm summer days. I wanted to capture that feeling by incorporating upbeat percussion and a rhythmic guitar. My goal was to create a track that people can enjoy most of the time in summer. 
+
+My second song was made with Suno.ai and my prompt for the song was:
+  The second song is dembow, reggaeton, cumbia, afro-latin fusion, rap, latin trap. It's like summer song that will bring you the back to the summer
+
+'<audio controls>
+  <source src="nora-k-2.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>'
+
+
+The table below presents the extracted Essentia feature values for my generated tracks.
+```{r echo=FALSE}
+mycorpus <- aisc2024 |>
+  filter(filename %in% c('nora-k-1','nora-k-2'))
+  
+kable(mycorpus, caption = "Essentia Feature Analysis of My Tracks") |>
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 ```
 
 
-## Welcome to my dashboard!
+Discovery
+================================================
 
-Later we'll dive further into the songs, for now here are 2 descriptions of the songs.
+Column {.sidebar data-width=400}
+-----------------------------------------------
+### description 
+First we have a few plots, so a better insight into the data can be created
 
-The first song has a dark, atmospheric 80s-inspired synthwave beat with smooth R&B elements, like The Weeknd , moody, energetic, downtempo, its made with Udio.ai
 
-The second song is dembow, reggaeton, cumbia, afro-latin fusion, rap, latin trap. It's like summer song that will bring you the back to the summer, made with Suno.ai
+The histogram of danceability shows that most songs are moderately danceable
 
-### Insights to the whole corpus
 
-#### Tempi
+The plots show us that a higher tempo does not indicate an higher danceability, more about this on the exclusive insights page. 
 
-Column {data-width=650}
------------------------------------------------------------------------------------------
-  ```{r echo=FALSE}
+The BPM is or on the lower side or above 110, this is because dance music is 110 BPM or above, while ballads or classical music are on the slower side. 
+
+
+The boxplot shows us that danceability and valence seem to be positively correlated, while the instrumentalness seems independant. It seems that the dataset has a high danceability and valence songs.
+
+This is an interactable chart, so if you hover above it you can see extra information. As can be seen from the chart the arousal is around the 4, this chart is very similar to the boxplot, except for valence we have arousal here. Again the arousal stays the same and you can see that the danceability varies a lot
+
+Column {data-width = 1100}
+----------------------------------------------------
+
+```{r echo=FALSE}
+aisc2024 <- read_csv('compmus2025.csv')
+
+# Histogram of Danceability
+ggplot(aisc2024, aes(x = danceability)) +
+  geom_histogram(binwidth = 0.05, fill = "purple", alpha = 0.7, color = "black") +
+  labs(title = "Histogram of Danceability", x = "Danceability", y = "Frequency") +
+  theme_minimal()
+
+
+# Scatter Plot of Danceability vs Tempo
+ggplot(aisc2024, aes(x = tempo, y = danceability)) +
+  geom_point(alpha = 0.7, color = "purple") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Danceability vs. Tempo", x = "Tempo (BPM)", y = "Danceability") +
+  theme_minimal()
+```
+
+
+```{r pressure, echo=FALSE}
+
+ggplot(aisc2024, aes(x=tempo)) +
+  geom_histogram(binwidth=10, fill="steelblue", color="black", alpha=0.7) +
+  theme_minimal() +
+  labs(title="Distribution of Tempo",
+       x="Tempo (BPM)",
+       y="Count") +
+  geom_density(aes(y=..count..*10), color="red", lwd=1.2)
+
+aisc2024$valence <- cut(aisc2024$valence, 
+                          breaks = c(0, 0.33, 0.66, 1), 
+                          labels = c("Low", "Medium", "High"))
+
+# Box plot: Danceability across Valence levels, colored by Instrumentalness
+ggplot(aisc2024, aes(x = valence, y = danceability, fill = valence)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+  geom_jitter(aes(color = instrumentalness), width = 0.2, alpha = 0.6) +  
+  scale_fill_manual(values = c("Low" = "blue", "Medium" = "orange", "High" = "red")) +
+  scale_color_gradient(low = "black", high = "white") +  
+  theme_minimal() +
+  labs(title = "Danceability Across Valence Levels (Instrumentalness in Points)",
+       x = "Valence Category",
+       y = "Danceability",
+       color = "Instrumentalness") +
+  theme(legend.position = "right")
+```
+
+
+```{r echo=FALSE}
+library(dplyr)
+library(ggplot2)
+library(plotly)
+
+p <- aisc2024 |>
+  ggplot(
+    aes(
+      x = tempo,
+      y = arousal,
+      size = instrumentalness,
+      colour = danceability
+    )
+  ) +
+  geom_point(alpha = 0.7) +  # Regular points
+  
+  # Highlight Track 1
+  geom_point(
+    data = aisc2024 |> filter(tempo == 111, arousal == 5.0956),  
+    aes(size = 7),  
+    colour = "red",
+    shape = 21,
+    stroke = 1.5
+  ) +
+  
+  # Highlight Track 2
+  geom_point(
+    data = aisc2024 |> filter(tempo == 134, arousal == 5.34),  
+    aes(size = 7),  
+    colour = "blue",
+    shape = 21,
+    stroke = 1.5
+  ) +
+  
+  geom_rug(linewidth = 0.2, sides = "b", alpha = 0.5) +  
+  geom_text(
+    x = 111,
+    y = 5.0956,
+    label = "Track 1",
+    size = 4,
+    hjust = "left",
+    vjust = "center",
+    angle = 25,
+    colour = "black"
+  ) +
+  geom_text(
+    x = 134,
+    y = 5.34,
+    label = "Track 2",
+    size = 4,
+    hjust = "left",
+    vjust = "center",
+    angle = 25,
+    colour = "black"
+  ) +
+  # scale_x_continuous(
+  #   limits = c(50, 200),
+  #   breaks = seq(50, 200, 50),
+  #   minor_breaks = NULL
+  # ) +
+  scale_y_continuous(
+    limits = c(1, 9),
+    breaks = c(1, 5, 9),
+    minor_breaks = NULL
+  ) +
+  scale_colour_viridis_c(option = "plasma", direction = -1) +
+  scale_size_continuous(trans = "sqrt", guide = "none") +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "How Tempo and Arousal Relate in the Playlist",
+    subtitle = "Higher tempo generally correlates with higher arousal, with danceability as color",
+    x = "Tempo (BPM)",
+    y = "Arousal (1-9 Scale)",
+    colour = "Danceability"
+  )
+
+ggplotly(p)
+
+```
+
+```{r echo=FALSE}
+corr_matrix <- cor(aisc2024[, -c(1,8)]) 
+ggcorrplot(corr_matrix, method = "circle")
+```
+
+```{r echo=FALSE}
+ggplot(aisc2024, aes(x = tempo, y = danceability)) +
+  geom_point() +
+  facet_wrap(~ ai) +  
+  theme_minimal()
+```
+
+
+Insights to the whole corpus
+=================================================
+Column {.sidebar data-width=350}
+-----------------------------------------------------
+### Description
+The songs in the whole corpus are not too fast or slow, as can be seen because there is a wide peak around 100BPM
+
+The first song has 2 drops in tempo around 50 and 90 seconds, and in the outro the tempo also changes up a bit.
+
+The second song’s tempo is almost the same till 110s and after 145seconds in the outro
+
+For more info go to the exclusive insights
+
+Column {data-width=1150}
+------------------------------------------------
+
+Tempi
+```{r echo=FALSE}
 df <- read_csv("compmus2025.csv")
 
 ggplot(df, aes(x = tempo)) +
@@ -44,8 +258,7 @@ ggplot(df, aes(x = tempo)) +
 ```
 
 
-
-#### My contributions 
+My contributions 
 
 ```{r echo=FALSE, fig.height=6, fig.width=4}
 
@@ -66,17 +279,589 @@ ggplot(df, aes(x = tempo)) +
   theme_classic()
 ```
 
------------------------------------------------------------------------------------------
+
+
+Key profile
+================================================
+
+Column {.sidebar data-width = 400}
+------------------------------------------------------
+
+### Description
+song 1 chord
+The frequent use of the seventh chord indicates a blues influence, as it's used to add harmonic richness and tension. The repetition of chord sequences indicates the theme that is present in the whole song. 
+
+Song 2 chord 
+As can be seen there are many chords used, as you can hear. The structure can be seen throughout the song. The intro is from 0-25s then the verse 25-48s, chorus 48-75s verse 2 75-98s, chorus again 98-125s and then from 175s the outro.
+
+Column {data-width=1100}
+-------------------------------------------
+  Song 1
+```{r echo=FALSE}
+major_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
+minor_chord <-
+  c(   1,    0,    0,    1,    0,    0,    0,    1,    0,    0,    0,    0)
+seventh_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    1,    0)
+
+major_key <-
+  c(5.0, 2.0, 3.5, 2.5, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 2.0, 2.5)
+
+minor_key <-
+  c(5.0, 2.5, 3.5, 4.5, 2.0, 3.5, 2.0, 4.0, 3.5, 2.5, 3.0, 2.5)
+
+chord_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:7", circshift(seventh_chord, 6),
+    "Gb:maj", circshift(major_chord, 6),
+    "Bb:min", circshift(minor_chord, 10),
+    "Db:maj", circshift(major_chord, 1),
+    "F:min", circshift(minor_chord, 5),
+    "Ab:7", circshift(seventh_chord, 8),
+    "Ab:maj", circshift(major_chord, 8),
+    "C:min", circshift(minor_chord, 0),
+    "Eb:7", circshift(seventh_chord, 3),
+    "Eb:maj", circshift(major_chord, 3),
+    "G:min", circshift(minor_chord, 7),
+    "Bb:7", circshift(seventh_chord, 10),
+    "Bb:maj", circshift(major_chord, 10),
+    "D:min", circshift(minor_chord, 2),
+    "F:7", circshift(seventh_chord, 5),
+    "F:maj", circshift(major_chord, 5),
+    "A:min", circshift(minor_chord, 9),
+    "C:7", circshift(seventh_chord, 0),
+    "C:maj", circshift(major_chord, 0),
+    "E:min", circshift(minor_chord, 4),
+    "G:7", circshift(seventh_chord, 7),
+    "G:maj", circshift(major_chord, 7),
+    "B:min", circshift(minor_chord, 11),
+    "D:7", circshift(seventh_chord, 2),
+    "D:maj", circshift(major_chord, 2),
+    "F#:min", circshift(minor_chord, 6),
+    "A:7", circshift(seventh_chord, 9),
+    "A:maj", circshift(major_chord, 9),
+    "C#:min", circshift(minor_chord, 1),
+    "E:7", circshift(seventh_chord, 4),
+    "E:maj", circshift(major_chord, 4),
+    "G#:min", circshift(minor_chord, 8),
+    "B:7", circshift(seventh_chord, 11),
+    "B:maj", circshift(major_chord, 11),
+    "D#:min", circshift(minor_chord, 3)
+  )
+
+key_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:maj", circshift(major_key, 6),
+    "Bb:min", circshift(minor_key, 10),
+    "Db:maj", circshift(major_key, 1),
+    "F:min", circshift(minor_key, 5),
+    "Ab:maj", circshift(major_key, 8),
+    "C:min", circshift(minor_key, 0),
+    "Eb:maj", circshift(major_key, 3),
+    "G:min", circshift(minor_key, 7),
+    "Bb:maj", circshift(major_key, 10),
+    "D:min", circshift(minor_key, 2),
+    "F:maj", circshift(major_key, 5),
+    "A:min", circshift(minor_key, 9),
+    "C:maj", circshift(major_key, 0),
+    "E:min", circshift(minor_key, 4),
+    "G:maj", circshift(major_key, 7),
+    "B:min", circshift(minor_key, 11),
+    "D:maj", circshift(major_key, 2),
+    "F#:min", circshift(minor_key, 6),
+    "A:maj", circshift(major_key, 9),
+    "C#:min", circshift(minor_key, 1),
+    "E:maj", circshift(major_key, 4),
+    "G#:min", circshift(minor_key, 8),
+    "B:maj", circshift(major_key, 11),
+    "D#:min", circshift(minor_key, 3)
+  )
+
+"features/nora-k-1.json" |> 
+  compmus_chroma(norm = "identity") |> 
+  compmus_match_pitch_templates(
+    chord_templates,         # Change to chord_templates if desired
+    norm = "identity",       # Try different norms (and match it with what you used in compmus_chroma)
+    distance = "cosine"   # Try different distance metrics
+  ) |>
+  ggplot(aes(x = time, y = name, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = "Template", fill = NULL) +
+  theme_classic()   
+
+```
+
+
+
+Song 2
+```{r echo=FALSE}
+major_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
+minor_chord <-
+  c(   1,    0,    0,    1,    0,    0,    0,    1,    0,    0,    0,    0)
+seventh_chord <-
+  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    1,    0)
+
+major_key <-
+  c(5.0, 2.0, 3.5, 2.5, 4.5, 4.0, 2.0, 4.5, 2.0, 3.5, 2.0, 2.5)
+
+minor_key <-
+  c(5.0, 2.5, 3.5, 4.5, 2.0, 3.5, 2.0, 4.0, 3.5, 2.5, 3.0, 2.5)
+
+chord_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:7", circshift(seventh_chord, 6),
+    "Gb:maj", circshift(major_chord, 6),
+    "Bb:min", circshift(minor_chord, 10),
+    "Db:maj", circshift(major_chord, 1),
+    "F:min", circshift(minor_chord, 5),
+    "Ab:7", circshift(seventh_chord, 8),
+    "Ab:maj", circshift(major_chord, 8),
+    "C:min", circshift(minor_chord, 0),
+    "Eb:7", circshift(seventh_chord, 3),
+    "Eb:maj", circshift(major_chord, 3),
+    "G:min", circshift(minor_chord, 7),
+    "Bb:7", circshift(seventh_chord, 10),
+    "Bb:maj", circshift(major_chord, 10),
+    "D:min", circshift(minor_chord, 2),
+    "F:7", circshift(seventh_chord, 5),
+    "F:maj", circshift(major_chord, 5),
+    "A:min", circshift(minor_chord, 9),
+    "C:7", circshift(seventh_chord, 0),
+    "C:maj", circshift(major_chord, 0),
+    "E:min", circshift(minor_chord, 4),
+    "G:7", circshift(seventh_chord, 7),
+    "G:maj", circshift(major_chord, 7),
+    "B:min", circshift(minor_chord, 11),
+    "D:7", circshift(seventh_chord, 2),
+    "D:maj", circshift(major_chord, 2),
+    "F#:min", circshift(minor_chord, 6),
+    "A:7", circshift(seventh_chord, 9),
+    "A:maj", circshift(major_chord, 9),
+    "C#:min", circshift(minor_chord, 1),
+    "E:7", circshift(seventh_chord, 4),
+    "E:maj", circshift(major_chord, 4),
+    "G#:min", circshift(minor_chord, 8),
+    "B:7", circshift(seventh_chord, 11),
+    "B:maj", circshift(major_chord, 11),
+    "D#:min", circshift(minor_chord, 3)
+  )
+
+key_templates <-
+  tribble(
+    ~name, ~template,
+    "Gb:maj", circshift(major_key, 6),
+    "Bb:min", circshift(minor_key, 10),
+    "Db:maj", circshift(major_key, 1),
+    "F:min", circshift(minor_key, 5),
+    "Ab:maj", circshift(major_key, 8),
+    "C:min", circshift(minor_key, 0),
+    "Eb:maj", circshift(major_key, 3),
+    "G:min", circshift(minor_key, 7),
+    "Bb:maj", circshift(major_key, 10),
+    "D:min", circshift(minor_key, 2),
+    "F:maj", circshift(major_key, 5),
+    "A:min", circshift(minor_key, 9),
+    "C:maj", circshift(major_key, 0),
+    "E:min", circshift(minor_key, 4),
+    "G:maj", circshift(major_key, 7),
+    "B:min", circshift(minor_key, 11),
+    "D:maj", circshift(major_key, 2),
+    "F#:min", circshift(minor_key, 6),
+    "A:maj", circshift(major_key, 9),
+    "C#:min", circshift(minor_key, 1),
+    "E:maj", circshift(major_key, 4),
+    "G#:min", circshift(minor_key, 8),
+    "B:maj", circshift(major_key, 11),
+    "D#:min", circshift(minor_key, 3)
+  )
+
+"features/nora-k-2.json" |> 
+  compmus_chroma(norm = "identity") |> 
+  compmus_match_pitch_templates(
+    chord_templates,         # Change to chord_templates if desired
+    norm = "identity",       # Try different norms (and match it with what you used in compmus_chroma)
+    distance = "cosine"   # Try different distance metrics
+  ) |>
+  ggplot(aes(x = time, y = name, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = "Template", fill = NULL) +
+  theme_classic()   
+```
+
+
+
+Deep dive into the music
+============================================
+  Column {.sidebar data-width=400}
+--------------------------------------------------
   
-  Column {.sidebar}
-------------------------------------------------------------------------------------------
-  The songs in the whole corpus are not too fast or slow, as can be seen because there is a wide peak around 100BPM
+  ### Description
+  track 1
+chroma: The R&B song uses overall only 2 pitchclasses, while in the middle part it almost uses every chord.
 
-The first song has 2 drops in tempo around 50 and 90 seconds, and in the outro the tempo also changes up a bit.
+self-similarity:
+  It can be seen that the R&B track has a lot more similar parts in the song, as there are a lot of little black squares. This is because the clap and the synths are coming back with a repeated interval.
 
-The second song's tempo is almost the same till 110s and after 145seconds in the outro 
+timbre-based similarity: The fist part of the song is, in terms of similarity, super similar until the chorus, and after its again very similar but there are also a bit more changes.
 
-For more info go to the exclusive insights 
 
--------------------------------------------------------------------------------------------
+track 2
+chroma :
+  This song shows a sustained activity across all pitch classes. It shows that this song is more intricate and has a complexer harmonic progression
 
+self-similarity: The latin track seems different but also the same, because it seems that the green lines are almost woven, this is because the beat is very similar but it has a sort of distortion above it. 
+
+timbre-based similarity: In the intro of this song, the song doesn't change much, but it does differ a lot from the rest of the song, the rest of the song has big chunks that are also similar except for the outro and a small part around 110 seconds.
+
+Column {.tabset}
+------------------------------------------------------
+### Track 1 
+
+```{r echo=FALSE, fig.height=4, fig.width=6}
+"features/nora-k-1.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  ggplot(aes(x = time, y = pc, fill = value)) + 
+  geom_raster() +
+  scale_y_continuous(
+    breaks = 0:11,
+    minor_breaks = NULL,
+    labels = c(
+                "C", "C#|Db", "D", "D#|Eb",
+                "E", "F", "F#|Gb", "G",
+                "G#|Ab", "A", "A#|Bb", "B"
+              )
+  ) +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic() 
+  # Change the theme? 
+
+```
+
+#### self-similarity track 1
+```{r, echo=FALSE, fig.height=4, fig.width=6}
+"features/nora-k-1.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  compmus_self_similarity(
+    feature = pc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic() 
+```
+
+#### tibre based similarity track 1
+
+```{r echo=FALSE, fig.height=4, fig.width=6}
+"features/nora-k-1.json" |>                           # Change the track
+  compmus_mfccs(norm = "identity") |>                  # Change the norm
+  compmus_self_similarity(
+    feature = mfcc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic() 
+```
+
+
+### Track 2
+
+```{r, echo=FALSE, fig.height=4, fig.width=6}
+
+#### Chroma - Track 2
+
+"features/nora-k-2.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  ggplot(aes(x = time, y = pc, fill = value)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()
+```
+
+
+#### self-similarity track 2 
+
+```{r, echo=FALSE, fig.height=4, fig.width=6}
+"features/nora-k-2.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  compmus_self_similarity(
+    feature = pc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()
+```
+
+#### tibre based similarity track 2
+```{r, echo=FALSE, fig.height=4, fig.width=6}
+"features/nora-k-2.json" |>                           # Change the track
+  compmus_mfccs(norm = "identity") |>                  # Change the norm
+  compmus_self_similarity(
+    feature = mfcc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()
+
+```
+
+Power Novelty
+===============================================
+Column {.sidebar data-width=400}
+------------------------------------------------
+### Description 
+
+
+
+
+Column {.tabset}
+------------------------------------------------
+
+### Track 1
+
+```{r, echo=FALSE}
+"features/nora-k-1.json" |>
+  compmus_energy_novelty() |> 
+  ggplot(aes(t, novelty)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "Energy Novelty", title="Energy Novelty Track 1")
+
+"features/nora-k-1.json" |> 
+  compmus_spectral_novelty() |> 
+  ggplot(aes(t, novelty)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "Spectral Novelty", title="Spectral Novelty Track 1")
+```
+
+
+### Track 2
+
+```{r echo=FALSE}
+"features/nora-k-2.json" |>
+  compmus_energy_novelty() |> 
+  ggplot(aes(t, novelty)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "Energy Novelty", title="Energy Novelty Track 2")
+
+"features/nora-k-2.json" |> 
+  compmus_spectral_novelty() |> 
+  ggplot(aes(t, novelty)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Time (s)", y = "Spectral Novelty", title="Spectral Novelty Track 2")
+```
+
+
+Visualizing the predicting power
+================================================
+
+Column {.sidebar data-width=400}
+-----------------------------------------------
+### Description 
+
+When optimizing the RandomForest it improved. It improved with the precision and recall of AI. For non-AI it slightly differs each time but the difference is not very big
+
+
+Column {.side bar data-width = 1100}
+----------------------------------------------------
+
+```{r echo=FALSE}
+compmus2025 <- read_csv("compmus2025.csv")
+
+get_conf_mat <- function(fit) {
+  outcome <- .get_tune_outcome_names(fit)
+  fit |> 
+    collect_predictions() |> 
+    conf_mat(truth = outcome, estimate = .pred_class)
+}  
+
+get_pr <- function(fit) {
+  fit |> 
+    conf_mat_resampled() |> 
+    group_by(Prediction) |> mutate(precision = Freq / sum(Freq)) |> 
+    group_by(Truth) |> mutate(recall = Freq / sum(Freq)) |> 
+    ungroup() |> filter(Prediction == Truth) |> 
+    select(class = Prediction, precision, recall)
+} 
+
+cluster_juice <-
+  recipe(
+    filename ~
+      arousal +
+      danceability +
+      instrumentalness +
+      tempo +
+      valence,
+    data = compmus2025
+  ) |>
+  step_center(all_predictors()) |>
+  step_scale(all_predictors()) |> 
+  # step_range(all_predictors()) |> 
+  prep(compmus2025) |>
+  juice() |>
+  column_to_rownames("filename")
+
+compmus2025_filtered <- 
+  compmus2025 |> filter(!is.na(ai)) |> 
+  mutate(ai = factor(if_else(ai, "AI", "Non-AI")))
+
+classification_recipe <-
+  recipe(
+    ai ~
+      arousal +
+      danceability +
+      instrumentalness +
+      tempo +
+      valence,
+    data = compmus2025_filtered
+  ) |>
+  step_center(all_predictors()) |>
+  step_scale(all_predictors()) 
+
+compmus_cv <- compmus2025_filtered |> vfold_cv(5)
+
+forest_model <-
+  rand_forest() |>
+  set_mode("classification") |> 
+  set_engine("ranger", importance = "impurity")
+indie_forest <- 
+  workflow() |> 
+  add_recipe(classification_recipe) |> 
+  add_model(forest_model) |> 
+  fit_resamples(
+    compmus_cv, 
+    control = control_resamples(save_pred = TRUE)
+  )
+
+
+indie_forest |> get_conf_mat() |> autoplot(type = "heatmap")
+```
+
+
+```{r}
+indie_forest |> get_pr()
+
+```
+
+```{r}
+
+forest_model <-
+  rand_forest() |>
+  set_mode("classification") |> 
+  set_engine("ranger", importance = "impurity")
+indie_forest <- 
+  workflow() |> 
+  add_recipe(classification_recipe) |> 
+  add_model(forest_model)
+
+indie_forest_resampled <- indie_forest |>
+  fit_resamples(compmus_cv, control = control_resamples(save_pred = TRUE))
+
+
+indie_forest_resampled |> get_conf_mat() |> autoplot(type = "heatmap")
+```
+
+```{r}
+indie_forest_resampled |> get_pr()
+
+```
+
+
+
+
+### Clustering
+
+```{r echo=FALSE}
+get_conf_mat <- function(fit) {
+  outcome <- .get_tune_outcome_names(fit)
+  fit |> 
+    collect_predictions() |> 
+    conf_mat(truth = outcome, estimate = .pred_class)
+}  
+
+get_pr <- function(fit) {
+  fit |> 
+    conf_mat_resampled() |> 
+    group_by(Prediction) |> mutate(precision = Freq / sum(Freq)) |> 
+    group_by(Truth) |> mutate(recall = Freq / sum(Freq)) |> 
+    ungroup() |> filter(Prediction == Truth) |> 
+    select(class = Prediction, precision, recall)
+}  
+
+aisc2024$valence <- as.numeric(as.character(aisc2024$valence))
+
+cluster_juice <-
+  recipe(
+    filename ~
+      arousal +
+      danceability +
+      instrumentalness +
+      tempo +
+      valence,
+    data = aisc2024
+  ) |>
+  step_center(all_predictors()) |>
+  step_scale(all_predictors()) |> 
+  # step_range(all_predictors()) |> 
+  prep(aisc2024) |>
+  juice() |>
+  column_to_rownames("filename")
+
+
+compmus_dist <- dist(cluster_juice, method = "euclidean")
+
+compmus_dist |> 
+  hclust(method = "single") |> # Try single, average, and complete.
+  dendro_data() |>
+  ggdendrogram()
+```
+
+
+
+```{r echo=FALSE}
+library(cluster)
+
+silhouette_score <- function(dist_matrix, clustering) {
+  silhouette(clustering, dist_matrix) |> summary()
+}
+
+compmus_hclust <- hclust(compmus_dist, method = "average") # Adjust method
+
+cluster_assignments <- cutree(compmus_hclust, k = 3) # Change k as needed
+silhouette_score(compmus_dist, cluster_assignments)
+```
+
+
+Exclusive insights
+=========================================
+
+While it seems shocking, danceability and tempo are not directly correlated, it's among other things dependent on the rhythm, valence, instrumentation and arousal.
+
+If you have a high tempo song, like an EDM song but with a bad rhythm it will not make it danceable, while if you have a slow song you could also slow dance on it and that will make it danceable. It's also important how you define danceable, if its only jumping up and down then the plot would have to change. A song with a high tempo but low energy may not have the same danceable impact as a moderate-tempo track with high energy and rhythm.
+
+Both songs have a very strong structure, this is because it's AI generated and it probably follows a formula to make a song.
+
+When comparing the timbre-based self similarity matrix and the tempogram we can see that they show on similar places the difference. 
