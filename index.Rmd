@@ -5,6 +5,11 @@ date: "Block 4"
 output: 
   flexdashboard::flex_dashboard:
     storyboard: true
+    theme:
+      bg: "#e9fce6"
+      fg: "#4a4949"
+      primary: "#87f5a2"
+      navbar-bg: "#86f0c4"
 ---
 
 ```{r setup, include=FALSE}
@@ -14,139 +19,56 @@ library(ggdendro)
 library(heatmaply)
 library(flexdashboard)
 library(plotly)
+library(ggcorrplot)
 library(tibble)
+library(kableExtra)
 #library(shiny)
 source("compmus.R")
 knitr::opts_chunk$set(echo = TRUE)
+aisc2024 <- read_csv('compmus2025.csv')
 ```
 
-Visualizing the predicting power
-================================================
-
-Column {.sidebar data-width=400}
------------------------------------------------
-#### Description 
-
-When optimizing the RandomForest it improved. It improved with the precision and recall of AI. For non-AI it slightly differs each time but the difference is not very big
-
-
-Column {data-width = 1100}
-----------------------------------------------------
-
-```{r echo=FALSE}
-compmus2025 <- read_csv("compmus2025.csv")
-
-get_conf_mat <- function(fit) {
-  outcome <- .get_tune_outcome_names(fit)
-  fit |> 
-    collect_predictions() |> 
-    conf_mat(truth = outcome, estimate = .pred_class)
-}  
-
-get_pr <- function(fit) {
-  fit |> 
-    conf_mat_resampled() |> 
-    group_by(Prediction) |> mutate(precision = Freq / sum(Freq)) |> 
-    group_by(Truth) |> mutate(recall = Freq / sum(Freq)) |> 
-    ungroup() |> filter(Prediction == Truth) |> 
-    select(class = Prediction, precision, recall)
-} 
-
-cluster_juice <-
-  recipe(
-    filename ~
-      arousal +
-      danceability +
-      instrumentalness +
-      tempo +
-      valence,
-    data = compmus2025
-  ) |>
-  step_center(all_predictors()) |>
-  step_scale(all_predictors()) |> 
-  # step_range(all_predictors()) |> 
-  prep(compmus2025) |>
-  juice() |>
-  column_to_rownames("filename")
-
-compmus2025_filtered <- 
-  compmus2025 |> filter(!is.na(ai)) |> 
-  mutate(ai = factor(if_else(ai, "AI", "Non-AI")))
-
-classification_recipe <-
-  recipe(
-    ai ~
-      arousal +
-      danceability +
-      instrumentalness +
-      tempo +
-      valence,
-    data = compmus2025_filtered
-  ) |>
-  step_center(all_predictors()) |>
-  step_scale(all_predictors()) 
-
-compmus_cv <- compmus2025_filtered |> vfold_cv(5)
-
-forest_model <-
-  rand_forest() |>
-  set_mode("classification") |> 
-  set_engine("ranger", importance = "impurity")
-indie_forest <- 
-  workflow() |> 
-  add_recipe(classification_recipe) |> 
-  add_model(forest_model) |> 
-  fit_resamples(
-    compmus_cv, 
-    control = control_resamples(save_pred = TRUE)
-  )
-
-
-indie_forest |> get_conf_mat() |> autoplot(type = "heatmap")
-```
-```{r}
-indie_forest |> get_pr()
-
-```
-
-```{r}
-
-forest_model <-
-  rand_forest() |>
-  set_mode("classification") |> 
-  set_engine("ranger", importance = "impurity")
-indie_forest <- 
-  workflow() |> 
-  add_recipe(classification_recipe) |> 
-  add_model(forest_model)
-
-indie_forest_resampled <- indie_forest |>
-  fit_resamples(compmus_cv, control = control_resamples(save_pred = TRUE))
-
-
-indie_forest_resampled |> get_conf_mat() |> autoplot(type = "heatmap")
-```
-
-```{r}
-indie_forest_resampled |> get_pr()
-
-```
 
 Introduction
 =================================================
 
-Later we'll dive further into the songs, for now here are 2 descriptions of the songs.
+The first song I created is a dark, 80's inspired R&B track I wanted to make something similar to the Weeknd's music, because I always loved his ability to blend nostalgia with a modern edge. I tried to implement synths and R&B to create his atmospheric yet energetic sound. My goals was to capture the listeners emotionally, while still having a strong rhythm and melody. 
 
-The first song has a dark, atmospheric 80s-inspired synthwave beat with smooth R&B elements, like The Weeknd , moody, energetic, downtempo, its made with Udio.ai
+My prompt for the first song was and it is made with Udio.ai: 
+song has a dark, atmospheric 80s-inspired synthwave beat with smooth R&B elements, like The Weeknd , moody, energetic, downtempo
 
-The second song is dembow, reggaeton, cumbia, afro-latin fusion, rap, latin trap. It's like summer song that will bring you the back to the summer, made with Suno.ai
+'<audio controls>
+  <source src="nora-k-1.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>'
+
+For the second song I decided to create a Latin summer song because I like the vibrant energy and the strong rhythms. There's something about Latin music and instantly puts you in a good mood, it's lively and perfect for warm summer days. I wanted to capture that feeling by incorporating upbeat percussion and a rhythmic guitar. My goal was to create a track that people can enjoy most of the time in summer. 
+
+My second song was made with Suno.ai and my prompt for the song was:
+The second song is dembow, reggaeton, cumbia, afro-latin fusion, rap, latin trap. It's like summer song that will bring you the back to the summer
+
+'<audio controls>
+  <source src="nora-k-2.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>'
+
+
+The table below presents the extracted Essentia feature values for my generated tracks.
+```{r echo=FALSE}
+mycorpus <- aisc2024 |>
+  filter(filename %in% c('nora-k-1','nora-k-2'))
+  
+kable(mycorpus, caption = "Essentia Feature Analysis of My Tracks") |>
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
 
 Discovery
 ================================================
 
 Column {.sidebar data-width=400}
 -----------------------------------------------
-#### description 
+### description 
 First we have a few plots, so a better insight into the data can be created
 
 
@@ -164,7 +86,7 @@ This is an interactable chart, so if you hover above it you can see extra inform
 
 Column {data-width = 1100}
 ----------------------------------------------------
-#### chart 1
+### chart 1
 ```{r echo=FALSE}
 aisc2024 <- read_csv('compmus2025.csv')
 
@@ -173,22 +95,19 @@ ggplot(aisc2024, aes(x = danceability)) +
   geom_histogram(binwidth = 0.05, fill = "purple", alpha = 0.7, color = "black") +
   labs(title = "Histogram of Danceability", x = "Danceability", y = "Frequency") +
   theme_minimal()
-```
 
 
-```{r echo=FALSE}
 # Scatter Plot of Danceability vs Tempo
 ggplot(aisc2024, aes(x = tempo, y = danceability)) +
   geom_point(alpha = 0.7, color = "purple") +
   geom_smooth(method = "lm", se = FALSE, color = "red") +
   labs(title = "Danceability vs. Tempo", x = "Tempo (BPM)", y = "Danceability") +
   theme_minimal()
-
 ```
 
 
 
-#### chart 2
+### chart 2
 ```{r pressure, echo=FALSE}
 
 ggplot(aisc2024, aes(x=tempo)) +
@@ -218,7 +137,7 @@ ggplot(aisc2024, aes(x = valence, y = danceability, fill = valence)) +
 ```
 
 
-#### chart 3 
+### chart 3 
 ```{r echo=FALSE}
 library(dplyr)
 library(ggplot2)
@@ -299,6 +218,69 @@ ggplotly(p)
 
 ```
 
+```{r echo=FALSE}
+corr_matrix <- cor(aisc2024[, -c(1,8)]) 
+ggcorrplot(corr_matrix, method = "circle")
+```
+
+```{r echo=FALSE}
+ggplot(aisc2024, aes(x = tempo, y = danceability)) +
+  geom_point() +
+  facet_wrap(~ ai) +  
+  theme_minimal()
+```
+
+
+Insights to the whole corpus
+=================================================
+Column {.sidebar data-width=350}
+-----------------------------------------------------
+### Description
+The songs in the whole corpus are not too fast or slow, as can be seen because there is a wide peak around 100BPM
+
+The first song has 2 drops in tempo around 50 and 90 seconds, and in the outro the tempo also changes up a bit.
+
+The second song’s tempo is almost the same till 110s and after 145seconds in the outro
+
+For more info go to the exclusive insights
+
+Column {data-width=1150}
+------------------------------------------------
+### Tempi
+```{r echo=FALSE}
+df <- read_csv("compmus2025.csv")
+
+ggplot(df, aes(x = tempo)) +
+  geom_histogram(bins = 10, fill = "skyblue", color = "black") +
+  labs(title = "Histogram of Tempi for Class Corpus",
+       x = "Tempo (BPM)",
+       y = "Count") +
+  theme_minimal()
+```
+
+
+### My contributions 
+
+```{r echo=FALSE, fig.height=6, fig.width=4}
+
+"features/nora-k-1.json" |>
+  compmus_tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+
+"features/nora-k-2.json" |>
+  compmus_tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) |>
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  theme_classic()
+```
+
+
 
 Key profile
 ================================================
@@ -306,7 +288,7 @@ Key profile
 Column {.sidebar data-width = 400}
 ------------------------------------------------------
 
-#### Description
+### Description
 song 1 chord
 The frequent use of the seventh chord indicates a blues influence, as it's used to add harmonic richness and tension. The repetition of chord sequences indicates the theme that is present in the whole song. 
 
@@ -315,7 +297,7 @@ As can be seen there are many chords used, as you can hear. The structure can be
 
 Column {data-width=1100}
 -------------------------------------------
-##### Song 1
+### Song 1
 ```{r echo=FALSE}
 major_chord <-
   c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
@@ -416,7 +398,7 @@ key_templates <-
 
 
 
-##### song 2
+### song 2
 ```{r echo=FALSE}
 major_chord <-
   c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
@@ -521,14 +503,14 @@ Deep dive into the music
 Column {.sidebar data-width=400}
 --------------------------------------------------
 
-#### Description
+### Description
 track 1
 chroma: The R&B song uses overall only 2 pitchclasses, while in the middle part it almost uses every chord.
 
 self-similarity:
 It can be seen that the R&B track has a lot more similar parts in the song, as there are a lot of little black squares. This is because the clap and the synths are coming back with a repeated interval.
 
-timbre-based similarity: The fist part of the song is in terms of similarity super similar until the chorus, and after its again very similar but there are also a bit more changes.
+timbre-based similarity: The fist part of the song is, in terms of similarity, super similar until the chorus, and after its again very similar but there are also a bit more changes.
 
 
 track 2
@@ -537,11 +519,11 @@ This song shows a sustained activity across all pitch classes. It shows that thi
 
 self-similarity: The latin track seems different but also the same, because it seems that the green lines are almost woven, this is because the beat is very similar but it has a sort of distortion above it. 
 
-timbre-based similarity: In the intro of this song it doesnt change much, but it does differ a lot from the rest of the song, the rest of the song has big chunks that are also simila except for the outro and a small part around 110 seconds.
+timbre-based similarity: In the intro of this song, the song doesn't change much, but it does differ a lot from the rest of the song, the rest of the song has big chunks that are also similar except for the outro and a small part around 110 seconds.
 
-Column {data-width = 1100}
+Column {.tabset}
 ------------------------------------------------------
-#### Chroma - Track 1
+### Track 1 
 
 ```{r echo=FALSE}
 "features/nora-k-1.json" |>                           # Change the track
@@ -560,23 +542,11 @@ Column {data-width = 1100}
   scale_fill_viridis_c(guide = "none") +               # Change the colours?
   labs(x = "Time (s)", y = NULL, fill = NULL) +
   theme_classic()                                      # Change the theme? 
-```
 
-#### Chroma - Track 2
 
-```{r, echo=FALSE}
-"features/nora-k-2.json" |>                           # Change the track
-  compmus_chroma(norm = "identity") |>                 # Change the norm
-  ggplot(aes(x = time, y = pc, fill = value)) + 
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
-  theme_classic()
-```
+#### self-similarity track 1
 
-##### self-similarity track 1  {.tabset}
-```{r echo=FALSE}
-"features/nora-k-1.json" |> 
+"features/nora-k-1.json" |>                           # Change the track
   compmus_chroma(norm = "identity") |>                 # Change the norm
   compmus_self_similarity(
     feature = pc,
@@ -587,27 +557,9 @@ Column {data-width = 1100}
   scale_fill_viridis_c(guide = "none") +               # Change the colours?
   labs(x = "Time (s)", y = NULL, fill = NULL) +
   theme_classic()
-```
 
+#### tibre based similarity track 1
 
-##### self-similarity track 2 
-```{r echo=FALSE}
-"features/nora-k-2.json" |>                           # Change the track
-  compmus_chroma(norm = "identity") |>                 # Change the norm
-  compmus_self_similarity(
-    feature = pc,
-    distance = "euclidean"                             # Change the distance
-  ) |>   
-  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +               # Change the colours?
-  labs(x = "Time (s)", y = NULL, fill = NULL) +
-  theme_classic()
-```
-
-##### tibre based similarity track 1
-
-```{r echo=FALSE}
 "features/nora-k-1.json" |>                           # Change the track
   compmus_mfccs(norm = "identity") |>                  # Change the norm
   compmus_self_similarity(
@@ -622,9 +574,37 @@ Column {data-width = 1100}
 ```
 
 
-##### tibre based similarity track 2
+### Track 2
 
-```{r echo=FALSE}
+```{r, echo=FALSE}
+
+#### Chroma - Track 2
+
+"features/nora-k-2.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  ggplot(aes(x = time, y = pc, fill = value)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()
+
+
+#### self-similarity track 2 
+
+"features/nora-k-2.json" |>                           # Change the track
+  compmus_chroma(norm = "identity") |>                 # Change the norm
+  compmus_self_similarity(
+    feature = pc,
+    distance = "euclidean"                             # Change the distance
+  ) |>   
+  ggplot(aes(x = xtime, y = ytime, fill = d)) + 
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +               # Change the colours?
+  labs(x = "Time (s)", y = NULL, fill = NULL) +
+  theme_classic()
+
+#### tibre based similarity track 2
+
 "features/nora-k-2.json" |>                           # Change the track
   compmus_mfccs(norm = "identity") |>                  # Change the norm
   compmus_self_similarity(
@@ -636,60 +616,124 @@ Column {data-width = 1100}
   scale_fill_viridis_c(guide = "none") +               # Change the colours?
   labs(x = "Time (s)", y = NULL, fill = NULL) +
   theme_classic()   
+
 ```
 
 
-Insights to the whole corpus
-=================================================
-Column {.sidebar data-width=350}
------------------------------------------------------
-#### Description
-The songs in the whole corpus are not too fast or slow, as can be seen because there is a wide peak around 100BPM
 
-The first song has 2 drops in tempo around 50 and 90 seconds, and in the outro the tempo also changes up a bit.
+Visualizing the predicting power
+================================================
 
-The second song’s tempo is almost the same till 110s and after 145seconds in the outro
+Column {.sidebar data-width=400}
+-----------------------------------------------
+### Description 
 
-For more info go to the exclusive insights
+When optimizing the RandomForest it improved. It improved with the precision and recall of AI. For non-AI it slightly differs each time but the difference is not very big
 
-Column {data-width=1150}
-------------------------------------------------
-#### Tempi
+
+Column {data-width = 1100}
+----------------------------------------------------
+
 ```{r echo=FALSE}
-df <- read_csv("compmus2025.csv")
+compmus2025 <- read_csv("compmus2025.csv")
 
-ggplot(df, aes(x = tempo)) +
-  geom_histogram(bins = 10, fill = "skyblue", color = "black") +
-  labs(title = "Histogram of Tempi for Class Corpus",
-       x = "Tempo (BPM)",
-       y = "Count") +
-  theme_minimal()
+get_conf_mat <- function(fit) {
+  outcome <- .get_tune_outcome_names(fit)
+  fit |> 
+    collect_predictions() |> 
+    conf_mat(truth = outcome, estimate = .pred_class)
+}  
+
+get_pr <- function(fit) {
+  fit |> 
+    conf_mat_resampled() |> 
+    group_by(Prediction) |> mutate(precision = Freq / sum(Freq)) |> 
+    group_by(Truth) |> mutate(recall = Freq / sum(Freq)) |> 
+    ungroup() |> filter(Prediction == Truth) |> 
+    select(class = Prediction, precision, recall)
+} 
+
+cluster_juice <-
+  recipe(
+    filename ~
+      arousal +
+      danceability +
+      instrumentalness +
+      tempo +
+      valence,
+    data = compmus2025
+  ) |>
+  step_center(all_predictors()) |>
+  step_scale(all_predictors()) |> 
+  # step_range(all_predictors()) |> 
+  prep(compmus2025) |>
+  juice() |>
+  column_to_rownames("filename")
+
+compmus2025_filtered <- 
+  compmus2025 |> filter(!is.na(ai)) |> 
+  mutate(ai = factor(if_else(ai, "AI", "Non-AI")))
+
+classification_recipe <-
+  recipe(
+    ai ~
+      arousal +
+      danceability +
+      instrumentalness +
+      tempo +
+      valence,
+    data = compmus2025_filtered
+  ) |>
+  step_center(all_predictors()) |>
+  step_scale(all_predictors()) 
+
+compmus_cv <- compmus2025_filtered |> vfold_cv(5)
+
+forest_model <-
+  rand_forest() |>
+  set_mode("classification") |> 
+  set_engine("ranger", importance = "impurity")
+indie_forest <- 
+  workflow() |> 
+  add_recipe(classification_recipe) |> 
+  add_model(forest_model) |> 
+  fit_resamples(
+    compmus_cv, 
+    control = control_resamples(save_pred = TRUE)
+  )
+
+
+indie_forest |> get_conf_mat() |> autoplot(type = "heatmap")
 ```
 
 
+```{r}
+indie_forest |> get_pr()
 
-#### My contributions 
-
-```{r echo=FALSE, fig.height=6, fig.width=4}
-
-"features/nora-k-1.json" |>
-  compmus_tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) |>
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
-
-"features/nora-k-2.json" |>
-  compmus_tempogram(window_size = 8, hop_size = 1, cyclic = FALSE) |>
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
 ```
 
+```{r}
 
+forest_model <-
+  rand_forest() |>
+  set_mode("classification") |> 
+  set_engine("ranger", importance = "impurity")
+indie_forest <- 
+  workflow() |> 
+  add_recipe(classification_recipe) |> 
+  add_model(forest_model)
+
+indie_forest_resampled <- indie_forest |>
+  fit_resamples(compmus_cv, control = control_resamples(save_pred = TRUE))
+
+
+indie_forest_resampled |> get_conf_mat() |> autoplot(type = "heatmap")
+```
+
+```{r}
+indie_forest_resampled |> get_pr()
+
+```
 
 
 Exclusive insights
